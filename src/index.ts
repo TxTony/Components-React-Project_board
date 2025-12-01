@@ -9,7 +9,7 @@ export { GitBoardTable } from './components/GitBoardTable';
 // Export table components
 export { TableHeader } from './components/Table/TableHeader';
 export { TableBody } from './components/Table/TableBody';
-export { Row } from './components/Table/Row';
+export { Row as RowComponent } from './components/Table/Row';
 export { Cell } from './components/Table/Cell';
 
 // Export cell editors
@@ -65,9 +65,9 @@ export {
 } from './state';
 
 // Export utilities
-export { sortRows, sortByField } from './utils/sorting';
-export { applyAllFilters, applyFilter } from './utils/filtering';
-export { generateRowId, generateFieldId, generateUID } from './utils/uid';
+export { sortRows } from './utils/sorting';
+export { applyAllFilters } from './utils/filtering';
+export { generateRowId, generateFieldId } from './utils/uid';
 export {
   parseMarkdown,
   sanitizeHTML,
