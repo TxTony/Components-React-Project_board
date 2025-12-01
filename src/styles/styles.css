@@ -1,0 +1,666 @@
+/**
+ * GitBoard Table Styles
+ * Main stylesheet with Tailwind + custom CSS variables
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for theming */
+:root {
+  /* Light theme (default) */
+  --gb-bg-default: #ffffff;
+  --gb-bg-muted: #f6f8fa;
+  --gb-bg-subtle: #f0f3f6;
+  --gb-bg-inset: #eff2f5;
+
+  --gb-border: #d0d7de;
+  --gb-border-muted: #d8dee4;
+
+  --gb-text-primary: #1f2328;
+  --gb-text-secondary: #656d76;
+  --gb-text-tertiary: #8c959f;
+  --gb-text-link: #0969da;
+
+  --gb-accent-emphasis: #0969da;
+  --gb-accent-muted: #ddf4ff;
+  --gb-accent-subtle: #b6e3ff;
+
+  --gb-spacing-xs: 0.25rem;
+  --gb-spacing-sm: 0.5rem;
+  --gb-spacing-md: 0.75rem;
+  --gb-spacing-lg: 1rem;
+  --gb-spacing-xl: 1.5rem;
+
+  --gb-radius: 0.375rem;
+}
+
+/* Dark theme */
+.dark,
+[data-theme='dark'] {
+  --gb-bg-default: #0d1117;
+  --gb-bg-muted: #161b22;
+  --gb-bg-subtle: #1c2128;
+  --gb-bg-inset: #22272e;
+
+  --gb-border: #30363d;
+  --gb-border-muted: #21262d;
+
+  --gb-text-primary: #e6edf3;
+  --gb-text-secondary: #8d96a0;
+  --gb-text-tertiary: #6e7681;
+  --gb-text-link: #4493f8;
+
+  --gb-accent-emphasis: #4493f8;
+  --gb-accent-muted: #003d7a;
+  --gb-accent-subtle: #0055a1;
+}
+
+/* Base component styles */
+@layer components {
+  .gitboard-table {
+    @apply w-full h-full overflow-auto;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  .gitboard-table__wrapper {
+    @apply w-full overflow-auto;
+    background-color: var(--gb-bg-default);
+  }
+
+  .gitboard-table__table {
+    @apply w-full border-collapse;
+    border-spacing: 0;
+  }
+
+  /* Table Header */
+  .gitboard-table__thead {
+    background-color: var(--gb-bg-muted);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .gitboard-table__th {
+    @apply px-3 py-2 text-left font-semibold;
+    color: var(--gb-text-primary);
+    background-color: var(--gb-bg-muted);
+    border-bottom: 1px solid var(--gb-border);
+    border-right: 1px solid var(--gb-border-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    min-width: 120px;
+    user-select: none;
+  }
+
+  .gitboard-table__th:last-child {
+    border-right: none;
+  }
+
+  .gitboard-table__th--sortable {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-table__th--sortable:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__th--draggable {
+    cursor: grab;
+  }
+
+  .gitboard-table__th--draggable:active {
+    cursor: grabbing;
+  }
+
+  .gitboard-table__th--dragging {
+    opacity: 0.4;
+    background-color: var(--gb-accent-muted);
+  }
+
+  .gitboard-table__th--drag-over {
+    border-left: 3px solid var(--gb-accent-emphasis);
+    background-color: var(--gb-accent-muted);
+  }
+
+  .gitboard-table__th-content {
+    @apply flex items-center gap-1;
+  }
+
+  .gitboard-table__sort-indicator {
+    @apply ml-1;
+    color: var(--gb-accent-emphasis);
+    font-size: 14px;
+  }
+
+  /* Resize Handle */
+  .gitboard-table__th {
+    position: relative;
+  }
+
+  .gitboard-table__resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    background-color: transparent;
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-table__resize-handle:hover {
+    background-color: var(--gb-accent-emphasis);
+  }
+
+  .gitboard-table__resize-handle:active {
+    background-color: var(--gb-accent-emphasis);
+  }
+
+  /* Table Body */
+  .gitboard-table__tbody {
+    background-color: var(--gb-bg-default);
+  }
+
+  .gitboard-table__row {
+    border-bottom: 1px solid var(--gb-border-muted);
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-table__row:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__row:last-child {
+    border-bottom: none;
+  }
+
+  /* Table Cell */
+  .gitboard-table__cell {
+    @apply px-3 py-2;
+    border-right: 1px solid var(--gb-border-muted);
+    vertical-align: middle;
+    min-height: 40px;
+  }
+
+  .gitboard-table__cell:last-child {
+    border-right: none;
+  }
+
+  .gitboard-table__cell-content {
+    @apply truncate;
+    max-width: 100%;
+    color: var(--gb-text-primary);
+  }
+
+  .gitboard-table__cell:empty .gitboard-table__cell-content::after {
+    content: '—';
+    color: var(--gb-text-tertiary);
+  }
+
+  /* Drag fill handle */
+  .gitboard-table__drag-handle {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    background-color: #2563eb;
+    border: 1px solid white;
+    border-radius: 1px;
+    cursor: crosshair;
+    z-index: 10;
+    transition: all 0.1s ease;
+  }
+
+  .gitboard-table__drag-handle:hover {
+    width: 10px;
+    height: 10px;
+    bottom: -2px;
+    right: -2px;
+    background-color: #1d4ed8;
+  }
+
+  .gitboard-table__drag-handle:active {
+    cursor: grabbing;
+  }
+
+  /* Dark mode drag handle */
+  .dark .gitboard-table__drag-handle {
+    background-color: #60a5fa;
+    border-color: #1e293b;
+  }
+
+  .dark .gitboard-table__drag-handle:hover {
+    background-color: #3b82f6;
+  }
+
+  /* Cell Input (Edit mode) */
+  .gitboard-table__cell-input {
+    @apply w-full px-2 py-1 border rounded;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-primary);
+    border-color: var(--gb-accent-emphasis);
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+  }
+
+  .gitboard-table__cell-input:focus {
+    border-color: var(--gb-accent-emphasis);
+    box-shadow: 0 0 0 2px var(--gb-accent-muted);
+  }
+
+  .gitboard-table__cell-input[type='number'] {
+    text-align: left;
+  }
+
+  /* Remove number input spinners for cleaner look */
+  .gitboard-table__cell-input[type='number']::-webkit-inner-spin-button,
+  .gitboard-table__cell-input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .gitboard-table__cell-input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  /* Search Bar */
+  .gitboard-table__search-bar {
+    @apply p-3 border-b;
+    background-color: var(--gb-bg-default);
+    border-color: var(--gb-border);
+  }
+
+  .gitboard-table__search-input-wrapper {
+    @apply relative flex items-center;
+    max-width: 400px;
+  }
+
+  .gitboard-table__search-icon {
+    @apply absolute left-3;
+    color: var(--gb-text-tertiary);
+    pointer-events: none;
+  }
+
+  .gitboard-table__search-input {
+    @apply w-full pl-10 pr-8 py-2 border rounded;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-primary);
+    border-color: var(--gb-border);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.1s ease;
+  }
+
+  .gitboard-table__search-input::placeholder {
+    color: var(--gb-text-tertiary);
+  }
+
+  .gitboard-table__search-input:focus {
+    border-color: var(--gb-accent-emphasis);
+    box-shadow: 0 0 0 2px var(--gb-accent-muted);
+  }
+
+  .gitboard-table__search-clear {
+    @apply absolute right-3 p-1 rounded;
+    color: var(--gb-text-tertiary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.1s ease, background-color 0.1s ease;
+  }
+
+  .gitboard-table__search-clear:hover {
+    color: var(--gb-text-primary);
+    background-color: var(--gb-bg-muted);
+  }
+
+  /* Stats Bar */
+  .gitboard-table__stats {
+    @apply px-3 py-2 text-sm border-b;
+    background-color: var(--gb-bg-muted);
+    color: var(--gb-text-secondary);
+    border-color: var(--gb-border);
+  }
+
+  /* Toolbar */
+  .gitboard-table__toolbar {
+    @apply flex items-center justify-between px-3 py-2 border-b;
+    background-color: var(--gb-bg-default);
+    border-color: var(--gb-border);
+    min-height: 48px;
+  }
+
+  .gitboard-table__toolbar-left {
+    @apply flex items-center gap-2;
+  }
+
+  .gitboard-table__toolbar-right {
+    @apply flex items-center gap-2;
+  }
+
+  /* Column Visibility Menu */
+  .gitboard-column-visibility {
+    position: relative;
+  }
+
+  .gitboard-column-visibility__button {
+    @apply flex items-center gap-1 px-2 py-1.5 rounded border text-sm;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-secondary);
+    border-color: var(--gb-border);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-column-visibility__button:hover {
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-column-visibility__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    min-width: 280px;
+    max-width: 400px;
+    background-color: var(--gb-bg-default);
+    border: 1px solid var(--gb-border);
+    border-radius: var(--gb-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .gitboard-column-visibility__header {
+    @apply flex items-center justify-between px-3 py-2 border-b;
+    border-color: var(--gb-border);
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-column-visibility__list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .gitboard-column-visibility__item {
+    @apply flex items-center gap-2 px-3 py-2 cursor-pointer;
+    border-bottom: 1px solid var(--gb-border-muted);
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-column-visibility__item:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-column-visibility__item:last-child {
+    border-bottom: none;
+  }
+
+  .gitboard-column-visibility__checkbox {
+    @apply w-4 h-4 rounded;
+    cursor: pointer;
+  }
+
+  .gitboard-column-visibility__label {
+    flex: 1;
+    font-size: 14px;
+    color: var(--gb-text-primary);
+  }
+
+  .gitboard-column-visibility__type {
+    font-size: 12px;
+    color: var(--gb-text-tertiary);
+    text-transform: lowercase;
+  }
+
+  .gitboard-column-visibility__footer {
+    @apply flex items-center justify-end px-3 py-2 border-t;
+    border-color: var(--gb-border);
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-column-visibility__close {
+    @apply px-3 py-1 rounded text-sm font-medium;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-primary);
+    border: 1px solid var(--gb-border);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-column-visibility__close:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__button {
+    @apply flex items-center gap-2 px-3 py-1.5 rounded border font-medium text-sm;
+    transition: all 0.1s ease;
+    cursor: pointer;
+  }
+
+  .gitboard-table__button--primary {
+    background-color: var(--gb-bg-muted);
+    color: var(--gb-text-primary);
+    border-color: var(--gb-border);
+  }
+
+  .gitboard-table__button--primary:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__button--danger {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+  }
+
+  .gitboard-table__button--danger:hover {
+    background-color: #b91c1c;
+  }
+
+  .gitboard-table__selection-count {
+    @apply text-sm font-medium;
+    color: var(--gb-text-secondary);
+  }
+
+  /* Add Item Row */
+  .gitboard-table__add-item-row {
+    border-bottom: 1px solid var(--gb-border-muted);
+  }
+
+  .gitboard-table__add-item-row:hover {
+    background-color: transparent;
+  }
+
+  .gitboard-table__add-item-input-wrapper {
+    @apply flex items-center gap-2;
+  }
+
+  .gitboard-table__add-item-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--gb-text-tertiary);
+  }
+
+  .gitboard-table__add-item-input {
+    @apply w-full px-0 py-1 border-0;
+    background-color: transparent;
+    color: var(--gb-text-primary);
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+  }
+
+  .gitboard-table__add-item-input::placeholder {
+    color: var(--gb-text-tertiary);
+  }
+
+  .gitboard-table__add-item-input:focus {
+    outline: none;
+  }
+
+  /* Badge (for select field values with colors) */
+  .gitboard-table__badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium;
+    /* Default styling when no color is provided */
+    background-color: var(--gb-bg-muted);
+    color: var(--gb-text-primary);
+    border: 1px solid var(--gb-border);
+    border-radius: 6px;
+  }
+
+  /* FilterBar - Inline autocomplete input */
+  .gitboard-filter-bar {
+    @apply px-3 py-2 border-b;
+    background-color: var(--gb-bg-default);
+    border-color: var(--gb-border);
+  }
+
+  .gitboard-filter-bar__input-wrapper {
+    @apply relative flex items-center;
+    width: 100%;
+  }
+
+  .gitboard-filter-bar__icon {
+    @apply absolute left-3;
+    color: var(--gb-text-tertiary);
+    pointer-events: none;
+  }
+
+  .gitboard-filter-bar__input {
+    @apply w-full pl-10 pr-10 py-2 border rounded-md text-sm;
+    background-color: var(--gb-bg-default);
+    color: var(--gb-text-primary);
+    border-color: var(--gb-border);
+    outline: none;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  .gitboard-filter-bar__input:focus {
+    border-color: var(--gb-accent-emphasis);
+    box-shadow: 0 0 0 3px var(--gb-accent-muted);
+  }
+
+  .gitboard-filter-bar__input::placeholder {
+    color: var(--gb-text-tertiary);
+    font-size: 0.8125rem;
+  }
+
+  .gitboard-filter-bar__clear {
+    @apply absolute right-2 flex items-center justify-center p-1 rounded;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--gb-text-tertiary);
+    transition: color 0.1s ease, background-color 0.1s ease;
+  }
+
+  .gitboard-filter-bar__clear:hover {
+    color: var(--gb-text-primary);
+    background-color: var(--gb-bg-subtle);
+  }
+
+  /* Suggestions dropdown */
+  .gitboard-filter-bar__suggestions {
+    @apply absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border rounded-md shadow-lg z-50;
+    border-color: var(--gb-border);
+    width: 100%;
+    max-width: 500px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .gitboard-filter-bar__suggestion {
+    @apply px-3 py-2.5 cursor-pointer;
+    border-bottom: 1px solid var(--gb-border);
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-filter-bar__suggestion:last-child {
+    border-bottom: none;
+  }
+
+  .gitboard-filter-bar__suggestion:hover,
+  .gitboard-filter-bar__suggestion--selected {
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-filter-bar__suggestion-label {
+    @apply flex items-center gap-2 mb-1;
+  }
+
+  .gitboard-filter-bar__suggestion-type {
+    @apply text-xs font-semibold uppercase px-1.5 py-0.5 rounded;
+    background-color: var(--gb-accent-subtle);
+    color: var(--gb-accent-fg);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  .gitboard-filter-bar__suggestion-value {
+    @apply text-sm font-medium;
+    color: var(--gb-text-primary);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  .gitboard-filter-bar__suggestion-description {
+    @apply text-xs;
+    color: var(--gb-text-secondary);
+    margin-left: 2rem;
+  }
+
+  /* Checkboxes */
+  .gitboard-table__checkbox {
+    @apply cursor-pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gb-accent-emphasis);
+  }
+
+  .gitboard-table__th--checkbox,
+  .gitboard-table__cell--checkbox {
+    width: 48px;
+    text-align: center;
+  }
+
+  .gitboard-table__row--selected {
+    background-color: var(--gb-accent-muted) !important;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .gb-text-primary {
+    color: var(--gb-text-primary);
+  }
+
+  .gb-text-secondary {
+    color: var(--gb-text-secondary);
+  }
+
+  .gb-text-tertiary {
+    color: var(--gb-text-tertiary);
+  }
+
+  .gb-bg-default {
+    background-color: var(--gb-bg-default);
+  }
+
+  .gb-bg-muted {
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gb-border {
+    border-color: var(--gb-border);
+  }
+}

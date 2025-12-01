@@ -1,0 +1,260 @@
+/**
+ * GitBoardTable Component Tests
+ * TDD approach - tests define expected behavior
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { GitBoardTable } from '../src/components/GitBoardTable';
+import { fields, rows } from '../src/mocks/mockData';
+
+describe('GitBoardTable', () => {
+  describe('Rendering', () => {
+    it('renders without crashing', () => {
+      render(<GitBoardTable fields={fields} rows={rows} />);
+      const table = screen.getByTestId('gitboard-table');
+      expect(table).toBeInTheDocument();
+    });
+
+    it('has proper ARIA role', () => {
+      render(<GitBoardTable fields={fields} rows={rows} />);
+      const table = screen.getByRole('grid');
+      expect(table).toBeInTheDocument();
+    });
+
+    it('renders table with correct number of column headers', () => {
+      const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
+      const headers = container.querySelectorAll('th');
+      expect(headers).toHaveLength(8); // All visible fields + selection checkbox column
+    });
+
+    it('renders table with correct number of data rows', () => {
+      const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
+      const tbody = container.querySelector('tbody');
+      const dataRows = tbody?.querySelectorAll('tr');
+      expect(dataRows).toHaveLength(4); // 3 data rows + 1 add item row
+    });
+
+    it('applies light theme by default', () => {
+      render(<GitBoardTable fields={fields} rows={rows} />);
+      const table = screen.getByTestId('gitboard-table');
+      expect(table).toHaveClass('light');
+    });
+
+    it('applies dark theme when specified', () => {
+      render(<GitBoardTable fields={fields} rows={rows} theme="dark" />);
+      const table = screen.getByTestId('gitboard-table');
+      expect(table).toHaveClass('dark');
+    });
+  });
+
+  describe('Props validation', () => {
+    it('accepts empty fields array', () => {
+      const { container } = render(<GitBoardTable fields={[]} rows={[]} />);
+      const headers = container.querySelectorAll('th');
+      expect(headers).toHaveLength(1); // Selection checkbox column
+    });
+
+    it('accepts empty rows array', () => {
+      const { container } = render(<GitBoardTable fields={fields} rows={[]} />);
+      const tbody = container.querySelector('tbody');
+      const dataRows = tbody?.querySelectorAll('tr');
+      expect(dataRows).toHaveLength(1); // Only add item row
+    });
+
+    it('renders with minimal required props', () => {
+      const minimalFields = [
+        {
+          id: 'fld_1',
+          name: 'Test Field',
+          type: 'text' as const,
+          visible: true,
+        },
+      ];
+      const minimalRows = [
+        {
+          id: 'row_1',
+          values: { fld_1: 'Test Value' },
+        },
+      ];
+
+      render(<GitBoardTable fields={minimalFields} rows={minimalRows} />);
+      expect(screen.getByTestId('gitboard-table')).toBeInTheDocument();
+    });
+  });
+
+  describe('Cell Selection', () => {
+    it('only allows one cell to be selected at a time', async () => {
+      const user = userEvent.setup();
+      const testFields = [
+        {
+          id: 'fld_status',
+          name: 'Status',
+          type: 'single-select' as const,
+          visible: true,
+          options: [
+            { id: 'opt_todo', label: 'To Do' },
+            { id: 'opt_done', label: 'Done' },
+          ],
+        },
+        {
+          id: 'fld_priority',
+          name: 'Priority',
+          type: 'single-select' as const,
+          visible: true,
+          options: [
+            { id: 'opt_high', label: 'High' },
+            { id: 'opt_low', label: 'Low' },
+          ],
+        },
+      ];
+      const testRows = [
+        {
+          id: 'row_1',
+          values: { fld_status: 'opt_todo', fld_priority: 'opt_high' },
+        },
+        {
+          id: 'row_2',
+          values: { fld_status: 'opt_done', fld_priority: 'opt_low' },
+        },
+      ];
+
+      const { container } = render(
+        <GitBoardTable fields={testFields} rows={testRows} />
+      );
+
+      // Click on first cell (row 1, status column)
+      const firstCell = screen.getAllByText('To Do')[0];
+      await user.click(firstCell);
+
+      // Verify first cell is selected
+      let selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+
+      // Click on second cell (row 1, priority column)
+      const secondCell = screen.getAllByText('High')[0];
+      await user.click(secondCell);
+
+      // Verify only second cell is selected (first cell should be deselected)
+      selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+
+      // Click on third cell (row 2, status column)
+      const thirdCell = screen.getAllByText('Done')[0];
+      await user.click(thirdCell);
+
+      // Verify only third cell is selected (previous cells should be deselected)
+      selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+    });
+  });
+
+  describe('Column Reordering', () => {
+    it('columns are draggable with reorder handler', () => {
+      const testFields = [
+        { id: 'fld_1', name: 'First', type: 'text' as const, visible: true },
+        { id: 'fld_2', name: 'Second', type: 'text' as const, visible: true },
+        { id: 'fld_3', name: 'Third', type: 'text' as const, visible: true },
+      ];
+      const testRows = [
+        { id: 'row_1', values: { fld_1: 'A', fld_2: 'B', fld_3: 'C' } },
+      ];
+
+      const { container } = render(
+        <GitBoardTable fields={testFields} rows={testRows} />
+      );
+
+      // Get initial column order
+      const initialHeaders = Array.from(container.querySelectorAll('.gitboard-table__th'))
+        .slice(1) // Skip checkbox column
+        .map((th) => th.textContent);
+      expect(initialHeaders).toEqual(['First', 'Second', 'Third']);
+
+      // Verify columns have drag handlers attached
+      const headers = container.querySelectorAll('.gitboard-table__th');
+      const firstColumn = headers[1]; // Skip checkbox column
+
+      expect(firstColumn.getAttribute('draggable')).toBe('true');
+      expect(firstColumn.className).toContain('gitboard-table__th--draggable');
+    });
+
+  });
+
+  describe('localStorage Persistence', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    afterEach(() => {
+      localStorage.clear();
+    });
+
+    it('saves state to localStorage when tableId is provided', () => {
+      const tableId = 'test-persistence';
+      const testFields = [
+        { id: 'fld_1', name: 'First', type: 'text' as const, visible: true },
+        { id: 'fld_2', name: 'Second', type: 'text' as const, visible: true },
+      ];
+
+      render(<GitBoardTable fields={testFields} rows={[]} tableId={tableId} />);
+
+      // Check that something was saved to localStorage
+      const savedState = localStorage.getItem(`gitboard-table-${tableId}`);
+      expect(savedState).toBeTruthy();
+
+      // Parse and verify it contains expected structure
+      const parsed = JSON.parse(savedState!);
+      expect(parsed).toHaveProperty('fieldOrder');
+      expect(parsed.fieldOrder).toEqual(['fld_1', 'fld_2']);
+    });
+
+    it('persists and restores sort configuration', async () => {
+      const user = userEvent.setup();
+      const tableId = 'test-sort-persistence';
+      const testFields = [
+        { id: 'fld_1', name: 'Name', type: 'text' as const, visible: true },
+      ];
+      const testRows = [
+        { id: 'row_1', values: { fld_1: 'Zebra' } },
+        { id: 'row_2', values: { fld_1: 'Apple' } },
+      ];
+
+      // First render - set sort
+      const { unmount } = render(
+        <GitBoardTable fields={testFields} rows={testRows} tableId={tableId} />
+      );
+
+      // Click header to sort
+      const header = screen.getByText('Name');
+      await user.click(header);
+
+      unmount();
+
+      // Second render - should restore sort
+      const { container } = render(
+        <GitBoardTable fields={testFields} rows={testRows} tableId={tableId} />
+      );
+
+      // Check for sort indicator
+      const sortIndicator = container.querySelector('.gitboard-table__sort-indicator');
+      expect(sortIndicator).not.toBeNull();
+    });
+
+    it('works without tableId (no persistence)', () => {
+      const testFields = [
+        { id: 'fld_1', name: 'Test', type: 'text' as const, visible: true },
+      ];
+
+      // Should not throw error when tableId is not provided
+      expect(() => {
+        render(<GitBoardTable fields={testFields} rows={[]} />);
+      }).not.toThrow();
+
+      // Should not save anything to localStorage
+      const keys = Object.keys(localStorage);
+      const gitboardKeys = keys.filter((k) => k.startsWith('gitboard-table-'));
+      expect(gitboardKeys).toHaveLength(0);
+    });
+  });
+});
