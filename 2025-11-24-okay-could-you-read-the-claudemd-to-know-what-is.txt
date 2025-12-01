@@ -1,0 +1,28 @@
+
+╭─── Claude Code v2.0.24 ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                        │
+│                Welcome back TxTony!                │ Run /install-github-app to tag @claude right from your Github … │
+│                                                    │ ✔ Run /init to create a CLAUDE.md file with instructions for C… │
+│                       ▐▛███▜▌                      │ ─────────────────────────────────────────────────────────────── │
+│                      ▝▜█████▛▘                     │ Recent activity                                                 │
+│                        ▘▘ ▝▝                       │ No recent activity                                              │
+│                                                    │                                                                 │
+│              Sonnet 4.5 · Claude Pro               │                                                                 │
+│   /…/Verifgood-Monitoring/github_board_component   │                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+══════════════════════════════════════ Conversation compacted · ctrl+o for history ═════════════════════════════════════
+  ⎿  Read src/styles/styles.css (345 lines)
+  ⎿  Read src/components/GitBoardTable.tsx (180 lines)
+  ⎿  Read src/components/Table/TableBody.tsx (45 lines)
+  ⎿  Read src/components/Table/Row.tsx (54 lines)
+  ⎿  Read src/components/Table/TableHeader.tsx (79 lines)
+  ⎿  Todo list read (7 items)
+  ⎿  Session limit reached ∙ resets 3pm
+     /upgrade to increase your usage limit.
+
+> continue 
+  ⎿  Session limit reached ∙ resets 3pm
+     /upgrade to increase your usage limit.
+
+
+

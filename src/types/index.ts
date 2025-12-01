@@ -1,0 +1,205 @@
+/**
+ * Core Type Definitions for GitBoard Table Component
+ * Based on GitHub Projects-style table data models
+ */
+
+/**
+ * Unique identifier type for all entities
+ */
+export type UID = string;
+
+/**
+ * Field types supported by the table
+ */
+export type FieldType =
+  | 'title'
+  | 'text'
+  | 'number'
+  | 'date'
+  | 'single-select'
+  | 'multi-select'
+  | 'assignee'
+  | 'iteration';
+
+/**
+ * Option for select fields, tags, assignees, etc.
+ */
+export interface FieldOption {
+  id: UID;
+  label: string;
+  color?: string;
+  colour?: string; // Support both spellings
+  description?: string;
+}
+
+/**
+ * Field (column) definition
+ */
+export interface FieldDefinition {
+  id: UID;
+  name: string;
+  type: FieldType;
+  visible: boolean;
+  width?: number;
+  options?: FieldOption[];
+}
+
+/**
+ * Row data structure
+ */
+export interface Row {
+  id: UID;
+  values: Record<UID, any>;
+  contentId?: UID;
+}
+
+/**
+ * User entity for assignee fields
+ */
+export interface User {
+  id: UID;
+  name: string;
+  avatar?: string;
+}
+
+/**
+ * Iteration (sprint/week) entity
+ */
+export interface Iteration {
+  id: UID;
+  label: string;
+  start: string; // ISO date string
+  end: string;   // ISO date string
+}
+
+/**
+ * Content item for side panel
+ */
+export interface ContentItem {
+  id: UID;
+  body: string;           // markdown
+  attachments: Attachment[];
+  createdAt: string;      // ISO timestamp
+  updatedAt: string;      // ISO timestamp
+  createdBy: UID;
+  updatedBy: UID;
+}
+
+/**
+ * Attachment entity
+ */
+export interface Attachment {
+  id: UID;
+  filename: string;
+  mime: string;
+  size: number;
+  url: string;
+  uploadedAt: string;     // ISO timestamp
+}
+
+/**
+ * Sort configuration
+ */
+export interface SortConfig {
+  field: UID;
+  direction: 'asc' | 'desc';
+}
+
+/**
+ * Filter configuration
+ */
+export interface FilterConfig {
+  field: UID;
+  operator: 'contains' | 'equals' | 'not-equals' | 'is-empty' | 'is-not-empty' | 'gt' | 'gte' | 'lt' | 'lte';
+  value?: any;
+}
+
+/**
+ * View configuration (saved state)
+ */
+export interface ViewConfig {
+  id: UID;
+  name: string;
+  columns: UID[];             // Visible field IDs in order
+  sortBy: SortConfig | null;
+  filters: FilterConfig[];
+  groupBy: UID | null;        // Field ID to group by
+}
+
+/**
+ * Theme configuration
+ */
+export type Theme = 'light' | 'dark';
+
+/**
+ * Main component props
+ */
+export interface GitBoardTableProps {
+  fields: FieldDefinition[];
+  rows: Row[];
+  theme?: Theme;
+  tableId?: string; // Optional table ID for localStorage persistence
+  onChange?: (rows: Row[]) => void;
+  onRowOpen?: (row: Row) => void;
+  onFieldChange?: (fields: FieldDefinition[]) => void;
+  onBulkUpdate?: (event: BulkUpdateEvent) => void;
+  contentResolver?: (id: UID) => Promise<ContentItem>;
+  users?: User[];
+  iterations?: Iteration[];
+  initialView?: ViewConfig;
+}
+
+/**
+ * Cell value type union
+ */
+export type CellValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | undefined;
+
+/**
+ * Table state interface
+ */
+export interface TableState {
+  fields: FieldDefinition[];
+  rows: Row[];
+  selectedRows: Set<UID>;
+  editingCell: { rowId: UID; fieldId: UID } | null;
+  currentView: ViewConfig;
+  theme: Theme;
+}
+
+/**
+ * Cell edit event
+ */
+export interface CellEditEvent {
+  rowId: UID;
+  fieldId: UID;
+  oldValue: CellValue;
+  newValue: CellValue;
+}
+
+/**
+ * Target cell for bulk update
+ */
+export interface BulkUpdateTarget {
+  rowId: UID;
+  fieldId: UID;
+  currentValue: CellValue;
+}
+
+/**
+ * Bulk update event (drag-fill)
+ */
+export interface BulkUpdateEvent {
+  sourceCell: {
+    rowId: UID;
+    fieldId: UID;
+    value: CellValue;
+  };
+  targetCells: BulkUpdateTarget[];
+  field: FieldDefinition;
+}

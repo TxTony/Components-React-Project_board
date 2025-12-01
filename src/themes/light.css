@@ -1,0 +1,70 @@
+/**
+ * Light Theme
+ * GitHub-inspired light theme colors
+ */
+
+.gitboard-table.light {
+  /* Background */
+  --gb-bg-default: #ffffff;
+  --gb-bg-subtle: #f6f8fa;
+  --gb-bg-muted: #eaeef2;
+  --gb-bg-overlay: rgba(27, 31, 36, 0.5);
+  --gb-bg-inset: #f6f8fa;
+
+  /* Border */
+  --gb-border-default: #d0d7de;
+  --gb-border-muted: #eaeef2;
+  --gb-border-subtle: #f6f8fa;
+
+  /* Text */
+  --gb-text-primary: #1f2328;
+  --gb-text-secondary: #656d76;
+  --gb-text-tertiary: #8c959f;
+  --gb-text-link: #0969da;
+  --gb-text-danger: #d1242f;
+  --gb-text-success: #1a7f37;
+  --gb-text-warning: #9a6700;
+
+  /* Components */
+  --gb-canvas-default: #ffffff;
+  --gb-canvas-subtle: #f6f8fa;
+  --gb-accent-fg: #0969da;
+  --gb-accent-emphasis: #0969da;
+  --gb-danger-fg: #d1242f;
+  --gb-danger-emphasis: #cf222e;
+  --gb-success-fg: #1a7f37;
+  --gb-success-emphasis: #1f883d;
+  --gb-attention-fg: #9a6700;
+  --gb-attention-emphasis: #bf8700;
+
+  /* Interactive */
+  --gb-hover-bg: #f3f4f6;
+  --gb-active-bg: #e5e7eb;
+  --gb-selected-bg: #ddf4ff;
+  --gb-focus-border: #0969da;
+}
+
+/* Component-specific light theme styles */
+.gitboard-table.light .gitboard-table__table {
+  background-color: var(--gb-canvas-default);
+  border: 1px solid var(--gb-border-default);
+}
+
+.gitboard-table.light .gitboard-table__cell {
+  border: 1px solid var(--gb-border-default);
+  color: var(--gb-text-primary);
+}
+
+.gitboard-table.light .gitboard-table__cell:hover {
+  background-color: var(--gb-hover-bg);
+}
+
+.gitboard-table.light th {
+  background-color: var(--gb-bg-subtle);
+  border: 1px solid var(--gb-border-default);
+  color: var(--gb-text-primary);
+}
+
+.gitboard-table.light th:hover {
+  background-color: var(--gb-hover-bg);
+}
