@@ -12,7 +12,7 @@ import { sortRows } from '../utils/sorting';
 import { applyAllFilters } from '../utils/filtering';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -107,6 +107,36 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // Call parent onChange callback
     if (onChange) {
       onChange(updatedRows);
+    }
+  };
+
+  const handleBulkUpdate = (event: BulkUpdateEvent) => {
+    // Apply bulk update to internal state
+    const updatedRows = rows.map((row) => {
+      const target = event.targetCells.find((t) => t.rowId === row.id);
+      if (target) {
+        return {
+          ...row,
+          values: {
+            ...row.values,
+            [event.sourceCell.fieldId]: event.sourceCell.value,
+          },
+        };
+      }
+      return row;
+    });
+
+    // Update internal state
+    setRows(updatedRows);
+
+    // Call parent onChange callback (for consistency with cell edits)
+    if (onChange) {
+      onChange(updatedRows);
+    }
+
+    // Call parent onBulkUpdate callback (for custom logic/analytics)
+    if (onBulkUpdate) {
+      onBulkUpdate(event);
     }
   };
 
@@ -306,7 +336,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             selectedCell={selectedCell}
             onSelectCell={handleCellSelect}
             onAddItem={handleAddItem}
-            onBulkUpdate={onBulkUpdate}
+            onBulkUpdate={handleBulkUpdate}
           />
         </table>
       </div>

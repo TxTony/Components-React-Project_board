@@ -3,6 +3,9 @@
  * Main entry point
  */
 
+// Import styles
+import './styles/styles.css';
+
 // Export main component
 export { GitBoardTable } from './components/GitBoardTable';
 

@@ -3,7 +3,7 @@
  * Renders the table body with all rows
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Row } from './Row';
 import { AddItemRow } from './AddItemRow';
 import type { FieldDefinition, Row as RowType, CellValue, BulkUpdateEvent } from '@/types';
@@ -35,18 +35,29 @@ export const TableBody: React.FC<TableBodyProps> = ({
 }) => {
   const [dragFillSource, setDragFillSource] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [dragFillTargets, setDragFillTargets] = useState<Set<string>>(new Set());
+  const dragFillSourceRef = useRef<{ rowId: string; fieldId: string } | null>(null);
+  const dragFillTargetsRef = useRef<Set<string>>(new Set());
 
   const handleDragFillStart = (rowId: string, fieldId: string) => {
-    setDragFillSource({ rowId, fieldId });
-    setDragFillTargets(new Set([`${rowId}:${fieldId}`]));
+    const source = { rowId, fieldId };
+    const initialTargets = new Set([`${rowId}:${fieldId}`]);
+
+    // Update both state (for UI) and ref (for immediate access)
+    setDragFillSource(source);
+    setDragFillTargets(initialTargets);
+    dragFillSourceRef.current = source;
+    dragFillTargetsRef.current = initialTargets;
 
     // Add global mouse event listeners
     const handleMouseUp = () => {
-      if (dragFillSource) {
-        emitBulkUpdate();
-      }
+      emitBulkUpdate();
+
+      // Clear both state and refs
       setDragFillSource(null);
       setDragFillTargets(new Set());
+      dragFillSourceRef.current = null;
+      dragFillTargetsRef.current = new Set();
+
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
@@ -74,23 +85,29 @@ export const TableBody: React.FC<TableBodyProps> = ({
       targets.add(`${rows[i].id}:${fieldId}`);
     }
 
+    // Update both state and ref
     setDragFillTargets(targets);
+    dragFillTargetsRef.current = targets;
   };
 
   const emitBulkUpdate = () => {
-    if (!dragFillSource || !onBulkUpdate) return;
+    // Use refs for immediate access (no async state issues)
+    const source = dragFillSourceRef.current;
+    const targets = dragFillTargetsRef.current;
 
-    const field = fields.find((f) => f.id === dragFillSource.fieldId);
+    if (!source) return;
+
+    const field = fields.find((f) => f.id === source.fieldId);
     if (!field) return;
 
-    const sourceRow = rows.find((r) => r.id === dragFillSource.rowId);
+    const sourceRow = rows.find((r) => r.id === source.rowId);
     if (!sourceRow) return;
 
-    const sourceValue = sourceRow.values[dragFillSource.fieldId];
+    const sourceValue = sourceRow.values[source.fieldId];
 
     // Build target cells (excluding the source)
-    const targetCells = Array.from(dragFillTargets)
-      .filter((key) => key !== `${dragFillSource.rowId}:${dragFillSource.fieldId}`)
+    const targetCells = Array.from(targets)
+      .filter((key) => key !== `${source.rowId}:${source.fieldId}`)
       .map((key) => {
         const [rowId, fieldId] = key.split(':');
         const row = rows.find((r) => r.id === rowId);
@@ -105,13 +122,16 @@ export const TableBody: React.FC<TableBodyProps> = ({
 
     const bulkUpdateEvent: BulkUpdateEvent = {
       sourceCell: {
-        rowId: dragFillSource.rowId,
-        fieldId: dragFillSource.fieldId,
+        rowId: source.rowId,
+        fieldId: source.fieldId,
         value: sourceValue,
       },
       targetCells,
       field,
     };
+
+    // Call the handler which will update internal state and notify parent
+    if (!onBulkUpdate) return;
 
     onBulkUpdate(bulkUpdateEvent);
   };
