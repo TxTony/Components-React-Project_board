@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GitBoardTable } from './components/GitBoardTable';
 import { fields, rows, users, iterations } from './mocks/mockData';
-import type { Row, Theme } from './types';
+import type { Row, Theme, BulkUpdateEvent } from './types';
 import './styles/styles.css';
 
 function DevApp() {
@@ -21,6 +21,18 @@ function DevApp() {
   const handleRowChange = (updatedRows: Row[]) => {
     console.log('Rows changed:', updatedRows);
     setTableRows(updatedRows);
+  };
+
+  const handleBulkUpdate = (event: BulkUpdateEvent) => {
+    // This is optional - just for logging/analytics
+    console.log('📊 Bulk update event:', {
+      field: event.field.name,
+      sourceValue: event.sourceCell.value,
+      targetCellCount: event.targetCells.length,
+    });
+
+    // Note: The component automatically updates the cells internally!
+    // onChange (handleRowChange) will be called with the updated rows.
   };
 
   const handleRowOpen = (row: Row) => {
@@ -142,6 +154,7 @@ function DevApp() {
             rows={tableRows}
             theme={theme}
             onChange={handleRowChange}
+            onBulkUpdate={handleBulkUpdate}
             onRowOpen={handleRowOpen}
             users={users}
             iterations={iterations}
@@ -162,7 +175,10 @@ function DevApp() {
             Built with React + TypeScript + TailwindCSS | TDD Approach with Vitest
           </p>
           <p style={{ marginTop: '0.5rem' }}>
-            Open console to see event logs (onChange, onRowOpen)
+            Open console to see event logs (onChange, onBulkUpdate, onRowOpen)
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            💡 <strong>Try drag-fill:</strong> Single-click a cell, then drag the fill handle (bottom-right corner) down
           </p>
         </div>
       </div>
