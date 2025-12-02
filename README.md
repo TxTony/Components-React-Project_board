@@ -4,7 +4,7 @@ A reusable GitHub-Projects-style table component, built with React + TypeScript,
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
-[![Tests](https://img.shields.io/badge/tests-149%20passing-success.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/tests-185%20passing-success.svg)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 🚀 Getting Started
@@ -32,6 +32,7 @@ npm install react react-dom tailwindcss
 ### Basic Usage
 
 ```tsx
+import { useState } from 'react';
 import { GitBoardTable } from '@txtony/gitboard-table';
 import type { FieldDefinition, Row } from '@txtony/gitboard-table';
 import '@txtony/gitboard-table/styles.css';
@@ -66,7 +67,7 @@ const fields: FieldDefinition[] = [
   },
 ];
 
-const rows: Row[] = [
+const initialRows: Row[] = [
   {
     id: 'row_1',
     values: {
@@ -78,14 +79,15 @@ const rows: Row[] = [
 ];
 
 export function App() {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+
   return (
     <GitBoardTable
       fields={fields}
       rows={rows}
       theme="light"
       tableId="my-project-board"
-      onChange={(updatedRows) => console.log('Rows updated:', updatedRows)}
-      onRowOpen={(row) => console.log('Row opened:', row)}
+      onChange={setRows}
     />
   );
 }
@@ -132,9 +134,10 @@ module.exports = {
 ### 🎯 Cell Selection & Bulk Operations
 
 - **Single-click selection** - Click any cell to select it
-- **Drag-fill support** - Excel-style drag handle for bulk updates
+- **Drag-fill support** - Excel-style drag handle for bulk updates (works automatically!)
 - **Visual indicators** - Selected cells show blue ring, drag targets show green highlight
-- **Bulk update events** - Emit complete information for external processing
+- **Automatic updates** - Component handles bulk edits internally, consistent with single cell edits
+- **Optional events** - `onBulkUpdate` callback provides details for analytics/logging
 
 ### 🔍 Advanced Filtering
 
@@ -163,16 +166,11 @@ module.exports = {
 
 - **Drag to reorder** - Rearrange columns by dragging headers
 - **Resize columns** - Drag the right edge of any column header to resize
+- **Show/Hide columns** - Toggle column visibility via eye icon menu
 - **Minimum width** - Columns cannot be smaller than 80px
-- **Persistent layout** - Column order and widths saved automatically
+- **Persistent layout** - Column order, widths, and visibility saved automatically
 - **Visual feedback** - Blue highlight on resize handle hover
-
-### 🔎 Full-Text Search
-
-- **Real-time search** - Filter rows as you type
-- **All fields searched** - Searches across visible field values
-- **Case-insensitive** - Works regardless of capitalization
-- **Stats display** - Shows filtered count vs total rows
+- **Column counter** - Shows visible/total count (e.g., "3/4")
 
 ### ✅ Row Selection
 
@@ -201,6 +199,7 @@ module.exports = {
 - **Saved state includes**:
   - Column order
   - Column widths
+  - Column visibility (show/hide)
   - Sort configuration
   - Active filters
 - **Instant restore** - State loaded on component mount
@@ -364,6 +363,93 @@ interface BulkUpdateTarget {
 }
 ```
 
+## 📡 Events & Callbacks
+
+The component emits several events for different user interactions. See [EVENTS.md](./EVENTS.md) for complete documentation.
+
+### onChange - Row Data Changes
+
+Called whenever row data is modified (cell edits, add row, delete rows, bulk updates).
+
+```typescript
+onChange?: (rows: Row[]) => void;
+```
+
+**Example**:
+```typescript
+const handleChange = (updatedRows: Row[]) => {
+  console.log('Rows updated:', updatedRows);
+  await api.updateRows(updatedRows);  // Sync with backend
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onChange={handleChange}
+/>
+```
+
+### onBulkUpdate - Drag-Fill Operations
+
+✅ **NEW**: Drag-fill works automatically! This callback is **OPTIONAL** and used for analytics/logging only.
+
+Called when user performs Excel-style drag-fill operations.
+
+```typescript
+onBulkUpdate?: (event: BulkUpdateEvent) => void;
+```
+
+**Basic Usage** - Drag-fill works automatically with just `onChange`:
+```typescript
+const [rows, setRows] = useState<Row[]>(initialRows);
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onChange={setRows}  // Drag-fill works automatically!
+/>
+```
+
+**Optional: With Analytics**:
+```typescript
+const handleBulkUpdate = (event: BulkUpdateEvent) => {
+  // Log bulk update event
+  console.log('Bulk update:', event.field.name, '→', event.targetCells.length, 'cells');
+
+  // Track analytics
+  trackEvent('bulk_update', {
+    field: event.field.name,
+    cellCount: event.targetCells.length,
+  });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onChange={setRows}
+  onBulkUpdate={handleBulkUpdate}  // Optional - for analytics only
+/>
+```
+
+**How It Works**:
+- Component updates cells automatically (internal state management)
+- `onChange` fires with updated rows (just like single cell edits)
+- `onBulkUpdate` fires with event details (if provided) for analytics/logging
+
+### onRowOpen - Row Click (Planned)
+
+🚧 Not yet implemented. Will be called when a row is clicked to open details.
+
+### onFieldChange - Field Config Changes (Planned)
+
+🚧 Not yet implemented. Will be called when field definitions are modified.
+
+📖 **See [EVENTS.md](./EVENTS.md) for complete event documentation including:**
+- Detailed payload structures
+- When each event fires
+- Best practices (debouncing, optimistic updates, validation)
+- TypeScript types and examples
+
 ## 🎨 Theming
 
 ### Using Built-in Themes
@@ -415,11 +501,12 @@ Override theme variables in your CSS:
 
 The package includes comprehensive test coverage with:
 
-- **149 passing tests**
+- **185 passing tests**
 - Vitest + React Testing Library
 - Unit tests for all components
 - Integration tests for complex interactions
 - Utility function tests
+- **14 dedicated bulk update tests** to verify drag-fill functionality
 
 ### Example Test
 
