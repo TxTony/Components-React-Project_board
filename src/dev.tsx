@@ -6,8 +6,8 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GitBoardTable } from './components/GitBoardTable';
-import { fields, rows, users, iterations } from './mocks/mockData';
-import type { Row, Theme, BulkUpdateEvent } from './types';
+import { fields, rows, users, iterations, views } from './mocks/mockData';
+import type { Row, Theme, BulkUpdateEvent, ViewConfig } from './types';
 import './styles/styles.css';
 
 function DevApp() {
@@ -37,6 +37,14 @@ function DevApp() {
 
   const handleRowOpen = (row: Row) => {
     console.log('Row opened:', row);
+  };
+
+  const handleViewChange = (view: ViewConfig) => {
+    console.log('🔍 View changed:', {
+      name: view.name,
+      filterCount: view.filters.length,
+      sortBy: view.sortBy?.field || 'none',
+    });
   };
 
   return (
@@ -156,8 +164,10 @@ function DevApp() {
             onChange={handleRowChange}
             onBulkUpdate={handleBulkUpdate}
             onRowOpen={handleRowOpen}
+            onViewChange={handleViewChange}
             users={users}
             iterations={iterations}
+            views={views}
           />
         </div>
 
@@ -179,6 +189,9 @@ function DevApp() {
           </p>
           <p style={{ marginTop: '0.5rem' }}>
             💡 <strong>Try drag-fill:</strong> Single-click a cell, then drag the fill handle (bottom-right corner) down
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            📑 <strong>Try views:</strong> Click different tabs above the table to switch between filtered views
           </p>
         </div>
       </div>

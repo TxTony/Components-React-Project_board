@@ -8,11 +8,12 @@ import { TableHeader } from './Table/TableHeader';
 import { TableBody } from './Table/TableBody';
 import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
+import { ViewTabs } from './Toolbar/ViewTabs';
 import { sortRows } from '../utils/sorting';
 import { applyAllFilters } from '../utils/filtering';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -27,12 +28,19 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   users: _users = [],
   iterations: _iterations = [],
   initialView,
+  views = [],
+  onViewChange,
 }) => {
   const [rows, setRows] = useState<Row[]>(initialRows);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(
-    initialView?.sortBy || null
+  const [currentView, setCurrentView] = useState<ViewConfig | null>(
+    initialView || (views.length > 0 ? views[0] : null)
   );
-  const [filters, setFilters] = useState<FilterConfig[]>(initialView?.filters || []);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(
+    initialView?.sortBy || (currentView?.sortBy || null)
+  );
+  const [filters, setFilters] = useState<FilterConfig[]>(
+    initialView?.filters || (currentView?.filters || [])
+  );
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [fieldOrder, setFieldOrder] = useState<string[]>(fields.map((f) => f.id));
@@ -252,6 +260,22 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleViewChange = (view: ViewConfig) => {
+    // Update current view
+    setCurrentView(view);
+
+    // Apply view's filters
+    setFilters(view.filters);
+
+    // Apply view's sort configuration
+    setSortConfig(view.sortBy);
+
+    // Call parent callback if provided
+    if (onViewChange) {
+      onViewChange(view);
+    }
+  };
+
   // Reorder fields based on fieldOrder state and apply widths and visibility
   const orderedFields = useMemo(() => {
     // Create a map of field IDs to fields for quick lookup
@@ -297,6 +321,13 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       role="grid"
       aria-label="GitBoard Table"
     >
+      {views.length > 0 && currentView && (
+        <ViewTabs
+          views={views}
+          currentViewId={currentView.id}
+          onViewChange={handleViewChange}
+        />
+      )}
       <FilterBar
         fields={orderedFields}
         filters={filters}
