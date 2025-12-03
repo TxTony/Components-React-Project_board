@@ -46,6 +46,55 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Serialize FilterConfig array into filter string
+  const serializeFilters = (filterConfigs: FilterConfig[]): string => {
+    return filterConfigs.map((filter) => {
+      // Find the field
+      const field = fields.find((f) => f.id === filter.field);
+      if (!field) return '';
+
+      const fieldName = field.name;
+      const operator = filter.operator;
+
+      // Map operator back to display format
+      let displayOperator: string = operator;
+      if (operator === 'gt') displayOperator = '>';
+      if (operator === 'gte') displayOperator = '>=';
+      if (operator === 'lt') displayOperator = '<';
+      if (operator === 'lte') displayOperator = '<=';
+
+      // Handle empty operators
+      if (operator === 'is-empty' || operator === 'is-not-empty') {
+        return `${fieldName}:${displayOperator}:`;
+      }
+
+      // Quote value if it contains spaces
+      let value = String(filter.value || '');
+
+      // For select fields, get the label from option ID
+      if (field.options && field.type && ['single-select', 'multi-select', 'assignee', 'iteration'].includes(field.type)) {
+        const option = field.options.find(opt => opt.id === filter.value);
+        if (option) {
+          value = option.label;
+        }
+      }
+
+      const quotedValue = value.includes(' ') ? `"${value}"` : value;
+
+      return `${fieldName}:${displayOperator}:${quotedValue}`;
+    }).filter(Boolean).join(' ');
+  };
+
+  // Sync input value with filters prop when it changes externally
+  useEffect(() => {
+    const serialized = serializeFilters(filters);
+    // Only update if different to avoid infinite loops
+    if (serialized !== inputValue) {
+      setInputValue(serialized);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
+
   // Parse filter string into FilterConfig array
   const parseFilters = (input: string): FilterConfig[] => {
     if (!input.trim()) return [];

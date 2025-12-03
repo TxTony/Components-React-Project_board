@@ -317,4 +317,85 @@ describe('FilterBar', () => {
       expect(onFiltersChange).toHaveBeenCalledWith([]);
     });
   });
+
+  describe('External filter prop changes', () => {
+    it('displays filters when filters prop is set externally', () => {
+      const externalFilters = [
+        { field: 'fld_status_c81f3', operator: 'equals' as const, value: 'opt_status_progress_29bb' },
+      ];
+
+      render(<FilterBar fields={fields} filters={externalFilters} onFiltersChange={vi.fn()} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      // Should display the serialized filter string (with quotes for values with spaces)
+      expect(input).toHaveValue('Status:equals:"In Progress"');
+    });
+
+    it('updates display when filters prop changes', () => {
+      const initialFilters = [
+        { field: 'fld_status_c81f3', operator: 'equals' as const, value: 'opt_status_todo_118a' },
+      ];
+
+      const { rerender } = render(
+        <FilterBar fields={fields} filters={initialFilters} onFiltersChange={vi.fn()} />
+      );
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      expect(input).toHaveValue('Status:equals:Todo');
+
+      // Change filters prop
+      const newFilters = [
+        { field: 'fld_status_c81f3', operator: 'equals' as const, value: 'opt_status_done_77de' },
+      ];
+
+      rerender(<FilterBar fields={fields} filters={newFilters} onFiltersChange={vi.fn()} />);
+
+      // Display should update
+      expect(input).toHaveValue('Status:equals:Done');
+    });
+
+    it('displays multiple filters from external prop', () => {
+      const externalFilters = [
+        { field: 'fld_owner_19ad8', operator: 'equals' as const, value: 'usr_tony_a19f2' },
+        { field: 'fld_status_c81f3', operator: 'not-equals' as const, value: 'opt_status_done_77de' },
+      ];
+
+      render(<FilterBar fields={fields} filters={externalFilters} onFiltersChange={vi.fn()} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      // Should display both filters joined by space
+      expect(input).toHaveValue('Owner:equals:"Tony Tip" Status:not-equals:Done');
+    });
+
+    it('displays filter with comparison operator correctly', () => {
+      const externalFilters = [
+        { field: 'fld_points_11b9e', operator: 'gte' as const, value: 3 },
+      ];
+
+      render(<FilterBar fields={fields} filters={externalFilters} onFiltersChange={vi.fn()} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      // Should display >= instead of gte
+      expect(input).toHaveValue('Points:>=:3');
+    });
+
+    it('clears display when filters prop becomes empty', () => {
+      const initialFilters = [
+        { field: 'fld_status_c81f3', operator: 'equals' as const, value: 'opt_status_done_77de' },
+      ];
+
+      const { rerender } = render(
+        <FilterBar fields={fields} filters={initialFilters} onFiltersChange={vi.fn()} />
+      );
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      expect(input).toHaveValue('Status:equals:Done');
+
+      // Set filters to empty array
+      rerender(<FilterBar fields={fields} filters={[]} onFiltersChange={vi.fn()} />);
+
+      // Display should be cleared
+      expect(input).toHaveValue('');
+    });
+  });
 });
