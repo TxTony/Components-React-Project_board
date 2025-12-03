@@ -83,6 +83,23 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     setFieldOrder(fields.map((f) => f.id));
   }, [fields]);
 
+  // Apply initial view configuration on mount
+  useEffect(() => {
+    if (currentView && currentView.columns && currentView.columns.length > 0) {
+      // Get all field IDs
+      const allFieldIds = fields.map(f => f.id);
+
+      // Fields not in currentView.columns should be hidden
+      const fieldsToHide = allFieldIds.filter(fieldId => !currentView.columns.includes(fieldId));
+      setHiddenColumns(new Set(fieldsToHide));
+
+      // Set field order based on currentView.columns
+      setFieldOrder(currentView.columns);
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save state to localStorage when it changes
   useEffect(() => {
     if (tableId) {
