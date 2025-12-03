@@ -13,6 +13,7 @@ import './styles/styles.css';
 function DevApp() {
   const [theme, setTheme] = useState<Theme>('light');
   const [tableRows, setTableRows] = useState<Row[]>(rows);
+  const [tableViews, setTableViews] = useState<ViewConfig[]>(views);
 
   const handleThemeToggle = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -45,6 +46,16 @@ function DevApp() {
       filterCount: view.filters.length,
       sortBy: view.sortBy?.field || 'none',
     });
+  };
+
+  const handleCreateView = (view: ViewConfig) => {
+    console.log('✨ View created:', view);
+    setTableViews((prev) => [...prev, view]);
+  };
+
+  const handleUpdateView = (view: ViewConfig) => {
+    console.log('💾 View updated:', view);
+    setTableViews((prev) => prev.map((v) => (v.id === view.id ? view : v)));
   };
 
   return (
@@ -165,9 +176,11 @@ function DevApp() {
             onBulkUpdate={handleBulkUpdate}
             onRowOpen={handleRowOpen}
             onViewChange={handleViewChange}
+            onCreateView={handleCreateView}
+            onUpdateView={handleUpdateView}
             users={users}
             iterations={iterations}
-            views={views}
+            views={tableViews}
           />
         </div>
 
@@ -192,6 +205,9 @@ function DevApp() {
           </p>
           <p style={{ marginTop: '0.5rem' }}>
             📑 <strong>Try views:</strong> Click different tabs above the table to switch between filtered views
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            ✨ <strong>Manage views:</strong> Click "+ Add view" to create new views, double-click a tab to rename, click "Save" when filters change
           </p>
         </div>
       </div>
