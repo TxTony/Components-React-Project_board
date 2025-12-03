@@ -147,6 +147,8 @@ export interface GitBoardTableProps {
   users?: User[];
   iterations?: Iteration[];
   initialView?: ViewConfig;
+  views?: ViewConfig[];      // Array of available views
+  onViewChange?: (view: ViewConfig) => void;  // Called when view changes
 }
 
 /**

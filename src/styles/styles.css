@@ -636,6 +636,49 @@
   .gitboard-table__row--selected {
     background-color: var(--gb-accent-muted) !important;
   }
+
+  /* View Tabs */
+  .gitboard-view-tabs {
+    @apply flex items-center gap-1 mb-4;
+    border-bottom: 1px solid var(--gb-border);
+    padding-bottom: 0;
+  }
+
+  .gitboard-view-tabs__tab {
+    @apply relative px-4 py-2 text-sm font-medium transition-colors;
+    @apply rounded-t-md border-0 bg-transparent cursor-pointer;
+    color: var(--gb-text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .gitboard-view-tabs__tab:hover {
+    color: var(--gb-text-primary);
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-view-tabs__tab--active {
+    color: var(--gb-text-primary);
+    border-bottom-color: var(--gb-accent-emphasis);
+    font-weight: 600;
+  }
+
+  .gitboard-view-tabs__tab--active:hover {
+    background-color: transparent;
+  }
+
+  .gitboard-view-tabs__badge {
+    @apply inline-flex items-center justify-center ml-2 px-2 py-0.5;
+    @apply text-xs font-semibold rounded-full;
+    background-color: var(--gb-accent-muted);
+    color: var(--gb-accent-emphasis);
+    min-width: 1.25rem;
+  }
+
+  .gitboard-view-tabs__tab--active .gitboard-view-tabs__badge {
+    background-color: var(--gb-accent-emphasis);
+    color: #ffffff;
+  }
 }
 
 /* Utility classes */
