@@ -4,7 +4,7 @@ A reusable GitHub-Projects-style table component, built with React + TypeScript,
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
-[![Tests](https://img.shields.io/badge/tests-185%20passing-success.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/tests-264%20passing-success.svg)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 🚀 Getting Started
@@ -154,6 +154,83 @@ module.exports = {
   - `is-empty` - Field is empty
   - `is-not-empty` - Field has value
   - `>`, `>=`, `<`, `<=` - Numeric comparisons
+
+📖 **See [FILTER_SYSTEM.md](./FILTER_SYSTEM.md)** for complete filter documentation and Firebase/Firestore adapter instructions.
+
+### 👁️ View Management
+
+Save and switch between different table configurations (filters, sorting, column visibility):
+
+- **Multiple views** - Create unlimited views with different configurations
+- **Tab navigation** - Click view tabs to switch between saved views
+- **Quick create** - Click "+ Add view" button to create new views instantly
+- **Rename views** - Double-click any view tab to edit its name
+- **Auto-apply** - Switching views automatically applies filters, sorting, and column visibility
+- **Unsaved changes indicator** - "Save" button appears when filters are modified
+- **Save current state** - Click "Save" to update view with current filters
+- **View properties**:
+  - Name (editable)
+  - Filters (can be saved and restored)
+  - Sort configuration
+  - Column visibility and order
+  - Filter count badge
+
+**Example**:
+```tsx
+import { useState } from 'react';
+import { GitBoardTable } from '@txtony/gitboard-table';
+import type { ViewConfig } from '@txtony/gitboard-table';
+
+const initialViews: ViewConfig[] = [
+  {
+    id: 'view_all',
+    name: 'All Tasks',
+    columns: ['fld_title', 'fld_status', 'fld_assignee'],
+    sortBy: null,
+    filters: [],
+    groupBy: null,
+  },
+  {
+    id: 'view_in_progress',
+    name: 'In Progress',
+    columns: ['fld_title', 'fld_assignee'],
+    sortBy: { field: 'fld_title', direction: 'asc' },
+    filters: [
+      { field: 'fld_status', operator: 'equals', value: 'opt_inprog' }
+    ],
+    groupBy: null,
+  },
+];
+
+function App() {
+  const [views, setViews] = useState<ViewConfig[]>(initialViews);
+
+  const handleCreateView = (view: ViewConfig) => {
+    console.log('New view created:', view);
+    setViews(prev => [...prev, view]);
+  };
+
+  const handleUpdateView = (view: ViewConfig) => {
+    console.log('View updated:', view);
+    setViews(prev => prev.map(v => v.id === view.id ? view : v));
+  };
+
+  const handleViewChange = (view: ViewConfig) => {
+    console.log('Switched to view:', view.name);
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      views={views}
+      onViewChange={handleViewChange}
+      onCreateView={handleCreateView}
+      onUpdateView={handleUpdateView}
+    />
+  );
+}
+```
 
 ### 📊 Sorting & Organization
 
@@ -305,6 +382,10 @@ interface GitBoardTableProps {
   users?: User[];                 // Available users for assignee field
   iterations?: Iteration[];       // Available iterations
   initialView?: ViewConfig;       // Initial sorting/filtering state
+  views?: ViewConfig[];           // Array of available views
+  onViewChange?: (view: ViewConfig) => void;   // Called when view is switched
+  onCreateView?: (view: ViewConfig) => void;   // Called when new view is created
+  onUpdateView?: (view: ViewConfig) => void;   // Called when view is updated
 }
 ```
 
@@ -363,9 +444,35 @@ interface BulkUpdateTarget {
 }
 ```
 
+### ViewConfig
+
+```typescript
+interface ViewConfig {
+  id: string;                     // Unique view identifier
+  name: string;                   // Display name (editable)
+  columns: string[];              // Visible field IDs in order
+  sortBy: SortConfig | null;      // Sort configuration
+  filters: FilterConfig[];        // Active filters
+  groupBy: string | null;         // Field ID to group by (future)
+}
+
+interface SortConfig {
+  field: string;                  // Field ID to sort by
+  direction: 'asc' | 'desc';      // Sort direction
+}
+
+interface FilterConfig {
+  field: string;                  // Field ID to filter
+  operator: 'contains' | 'equals' | 'not-equals' | 'is-empty' | 'is-not-empty' | 'gt' | 'gte' | 'lt' | 'lte';
+  value?: any;                    // Filter value (optional for is-empty/is-not-empty)
+}
+```
+
 ## 📡 Events & Callbacks
 
-The component emits several events for different user interactions. See [EVENTS.md](./EVENTS.md) for complete documentation.
+The component emits several events for different user interactions.
+
+📖 **See [EVENTS.md](./EVENTS.md)** for complete event documentation including all payloads and examples.
 
 ### onChange - Row Data Changes
 
@@ -444,6 +551,95 @@ const handleBulkUpdate = (event: BulkUpdateEvent) => {
 
 🚧 Not yet implemented. Will be called when field definitions are modified.
 
+### onViewChange - View Switching
+
+Called when the user switches between different views.
+
+```typescript
+onViewChange?: (view: ViewConfig) => void;
+```
+
+**Example**:
+```typescript
+const handleViewChange = (view: ViewConfig) => {
+  console.log('Switched to:', view.name);
+  console.log('Active filters:', view.filters.length);
+
+  // Track analytics
+  trackEvent('view_changed', {
+    viewName: view.name,
+    filterCount: view.filters.length,
+  });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onViewChange={handleViewChange}
+/>
+```
+
+### onCreateView - New View Creation
+
+Called when the user creates a new view by clicking the "+ Add view" button.
+
+```typescript
+onCreateView?: (view: ViewConfig) => void;
+```
+
+**Example**:
+```typescript
+const [views, setViews] = useState<ViewConfig[]>(initialViews);
+
+const handleCreateView = (newView: ViewConfig) => {
+  console.log('New view created:', newView.name);
+
+  // Add to state
+  setViews(prev => [...prev, newView]);
+
+  // Optionally save to backend
+  await api.saveView(newView);
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onCreateView={handleCreateView}
+/>
+```
+
+### onUpdateView - View Updates
+
+Called when the user modifies a view (renames it or saves filter changes).
+
+```typescript
+onUpdateView?: (view: ViewConfig) => void;
+```
+
+**Example**:
+```typescript
+const [views, setViews] = useState<ViewConfig[]>(initialViews);
+
+const handleUpdateView = (updatedView: ViewConfig) => {
+  console.log('View updated:', updatedView.name);
+
+  // Update in state
+  setViews(prev => prev.map(v => v.id === updatedView.id ? updatedView : v));
+
+  // Optionally save to backend
+  await api.updateView(updatedView);
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onUpdateView={handleUpdateView}
+/>
+```
+
 📖 **See [EVENTS.md](./EVENTS.md) for complete event documentation including:**
 - Detailed payload structures
 - When each event fires
@@ -501,12 +697,20 @@ Override theme variables in your CSS:
 
 The package includes comprehensive test coverage with:
 
-- **185 passing tests**
+- **264 passing tests**
 - Vitest + React Testing Library
 - Unit tests for all components
 - Integration tests for complex interactions
 - Utility function tests
-- **14 dedicated bulk update tests** to verify drag-fill functionality
+- **14 bulk update tests** - Verify drag-fill functionality
+- **58 view tabs tests** - Verify view switching, filters, creation, editing, and saving
+- **5 view management tests** - Verify column visibility and filter application from views
+- **5 FilterBar external filter tests** - Verify filter display from view changes
+- **39 new view management tests** - Comprehensive coverage of:
+  - Add view button functionality (7 tests)
+  - Double-click to edit view name (11 tests)
+  - Save button for filter changes (13 tests)
+  - View creation and update callbacks (8 tests)
 
 ### Example Test
 

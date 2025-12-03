@@ -28,9 +28,12 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   users: _users = [],
   iterations: _iterations = [],
   initialView,
-  views = [],
+  views: initialViews = [],
   onViewChange,
+  onCreateView,
+  onUpdateView,
 }) => {
+  const [views, setViews] = useState<ViewConfig[]>(initialViews);
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [currentView, setCurrentView] = useState<ViewConfig | null>(
     initialView || (views.length > 0 ? views[0] : null)
@@ -306,6 +309,38 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleCreateView = (view: ViewConfig) => {
+    // Add new view to views state
+    setViews((prevViews) => [...prevViews, view]);
+
+    // Call parent callback if provided
+    if (onCreateView) {
+      onCreateView(view);
+    }
+  };
+
+  const handleUpdateView = (updatedView: ViewConfig) => {
+    // Update view in views state
+    setViews((prevViews) =>
+      prevViews.map((v) => (v.id === updatedView.id ? updatedView : v))
+    );
+
+    // If updating the current view, update currentView state too
+    if (currentView && currentView.id === updatedView.id) {
+      setCurrentView(updatedView);
+    }
+
+    // Call parent callback if provided
+    if (onUpdateView) {
+      onUpdateView(updatedView);
+    }
+  };
+
+  // Update views when initialViews prop changes
+  useEffect(() => {
+    setViews(initialViews);
+  }, [initialViews]);
+
   // Reorder fields based on fieldOrder state and apply widths and visibility
   const orderedFields = useMemo(() => {
     // Create a map of field IDs to fields for quick lookup
@@ -355,7 +390,10 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         <ViewTabs
           views={views}
           currentViewId={currentView.id}
+          currentFilters={filters}
           onViewChange={handleViewChange}
+          onCreateView={onCreateView ? handleCreateView : undefined}
+          onUpdateView={onUpdateView ? handleUpdateView : undefined}
         />
       )}
       <FilterBar

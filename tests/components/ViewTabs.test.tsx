@@ -585,4 +585,651 @@ describe('ViewTabs', () => {
       expect(badge).toHaveClass('gitboard-view-tabs__badge');
     });
   });
+
+  describe('Add View Button', () => {
+    it('renders add view button when onCreateView is provided', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onCreateView={vi.fn()}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      expect(addButton).toBeInTheDocument();
+      expect(addButton).toHaveTextContent('Add view');
+    });
+
+    it('does not render add view button when onCreateView is undefined', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+        />
+      );
+
+      const addButton = screen.queryByLabelText('Add new view');
+      expect(addButton).not.toBeInTheDocument();
+    });
+
+    it('calls onCreateView with new view when clicked', async () => {
+      const user = userEvent.setup();
+      const onCreateView = vi.fn();
+      const onViewChange = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={onViewChange}
+          onCreateView={onCreateView}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      await user.click(addButton);
+
+      expect(onCreateView).toHaveBeenCalledTimes(1);
+      expect(onCreateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.stringContaining('view_'),
+          name: 'New View',
+          columns: [],
+          sortBy: null,
+          filters: [],
+          groupBy: null,
+        })
+      );
+    });
+
+    it('switches to new view after creation', async () => {
+      const user = userEvent.setup();
+      const onCreateView = vi.fn();
+      const onViewChange = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={onViewChange}
+          onCreateView={onCreateView}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      await user.click(addButton);
+
+      expect(onViewChange).toHaveBeenCalledTimes(1);
+      expect(onViewChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'New View',
+        })
+      );
+    });
+
+    it('generates unique view ID for each new view', async () => {
+      const user = userEvent.setup();
+      const onCreateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onCreateView={onCreateView}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      await user.click(addButton);
+      await user.click(addButton);
+
+      expect(onCreateView).toHaveBeenCalledTimes(2);
+      const firstId = onCreateView.mock.calls[0][0].id;
+      const secondId = onCreateView.mock.calls[1][0].id;
+      expect(firstId).not.toBe(secondId);
+    });
+
+    it('has proper button type attribute', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onCreateView={vi.fn()}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      expect(addButton).toHaveAttribute('type', 'button');
+    });
+
+    it('applies correct CSS class to add button', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onCreateView={vi.fn()}
+        />
+      );
+
+      const addButton = screen.getByLabelText('Add new view');
+      expect(addButton).toHaveClass('gitboard-view-tabs__add-button');
+    });
+  });
+
+  describe('Edit View Name', () => {
+    it('shows input field when tab is double-clicked', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveValue('All Tasks');
+    });
+
+    it('focuses and selects text when editing starts', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      expect(input).toHaveFocus();
+    });
+
+    it('saves name on Enter key', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.type(input, 'Updated Name{Enter}');
+
+      expect(onUpdateView).toHaveBeenCalledTimes(1);
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'view_all',
+          name: 'Updated Name',
+        })
+      );
+    });
+
+    it('cancels editing on Escape key', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.type(input, 'Updated Name{Escape}');
+
+      expect(onUpdateView).not.toHaveBeenCalled();
+      expect(screen.queryByLabelText('Edit view name')).not.toBeInTheDocument();
+    });
+
+    it('saves name on blur (click away)', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <div>
+          <ViewTabs
+            views={mockViews}
+            currentViewId="view_all"
+            currentFilters={[]}
+            onViewChange={vi.fn()}
+            onUpdateView={onUpdateView}
+          />
+          <button>Outside Button</button>
+        </div>
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.type(input, 'Updated Name');
+
+      // Click outside to trigger blur
+      const outsideButton = screen.getByText('Outside Button');
+      await user.click(outsideButton);
+
+      expect(onUpdateView).toHaveBeenCalledTimes(1);
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'view_all',
+          name: 'Updated Name',
+        })
+      );
+    });
+
+    it('does not save if name is empty (preserves original name)', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.keyboard('{Enter}');
+
+      expect(onUpdateView).toHaveBeenCalledTimes(1);
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'view_all',
+          name: 'All Tasks', // Original name preserved
+        })
+      );
+    });
+
+    it('trims whitespace from edited name', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.type(input, '  Trimmed Name  {Enter}');
+
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Trimmed Name',
+        })
+      );
+    });
+
+    it('does not call onUpdateView when onUpdateView is undefined', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      // Double-click should not trigger editing without onUpdateView
+      await user.dblClick(allTasksTab);
+
+      const input = screen.queryByLabelText('Edit view name');
+      expect(input).not.toBeInTheDocument();
+    });
+
+    it('preserves all view properties except name when updating', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const inProgressTab = screen.getByText('In Progress');
+      await user.dblClick(inProgressTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      await user.clear(input);
+      await user.type(input, 'New Name{Enter}');
+
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'view_filtered',
+          name: 'New Name',
+          columns: ['fld_1'],
+          sortBy: { field: 'fld_1', direction: 'asc' },
+          filters: [{ field: 'fld_status', operator: 'equals', value: 'in_progress' }],
+          groupBy: null,
+        })
+      );
+    });
+
+    it('applies correct CSS class to edit input', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      const input = screen.getByLabelText('Edit view name');
+      expect(input).toHaveClass('gitboard-view-tabs__input');
+    });
+  });
+
+  describe('Save Button', () => {
+    it('shows save button when filters differ from view filters', () => {
+      const viewFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'in_progress' },
+      ];
+
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toBeInTheDocument();
+      expect(saveButton).toHaveTextContent('Save');
+    });
+
+    it('hides save button when filters match view filters', () => {
+      const viewFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'in_progress' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={viewFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.queryByLabelText('Save view changes');
+      expect(saveButton).not.toBeInTheDocument();
+    });
+
+    it('hides save button when onUpdateView is undefined', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.queryByLabelText('Save view changes');
+      expect(saveButton).not.toBeInTheDocument();
+    });
+
+    it('calls onUpdateView with current filters when clicked', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+        { field: 'fld_owner', operator: 'equals' as const, value: 'user_2' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      await user.click(saveButton);
+
+      expect(onUpdateView).toHaveBeenCalledTimes(1);
+      expect(onUpdateView).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'view_filtered',
+          filters: currentFilters,
+        })
+      );
+    });
+
+    it('preserves all view properties except filters when saving', async () => {
+      const user = userEvent.setup();
+      const onUpdateView = vi.fn();
+
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={onUpdateView}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      await user.click(saveButton);
+
+      expect(onUpdateView).toHaveBeenCalledWith({
+        id: 'view_filtered',
+        name: 'In Progress',
+        columns: ['fld_1'],
+        sortBy: { field: 'fld_1', direction: 'asc' },
+        filters: currentFilters,
+        groupBy: null,
+      });
+    });
+
+    it('applies correct CSS class to save button', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toHaveClass('gitboard-view-tabs__save-button');
+    });
+
+    it('has proper button type attribute', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toHaveAttribute('type', 'button');
+    });
+
+    it('detects changes when filter is added', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'in_progress' },
+        { field: 'fld_owner', operator: 'equals' as const, value: 'user_1' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toBeInTheDocument();
+    });
+
+    it('detects changes when filter is removed', () => {
+      const currentFilters: any[] = [];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toBeInTheDocument();
+    });
+
+    it('detects changes when filter value is modified', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'equals' as const, value: 'done' }, // Different value
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toBeInTheDocument();
+    });
+
+    it('detects changes when filter operator is modified', () => {
+      const currentFilters = [
+        { field: 'fld_status', operator: 'not-equals' as const, value: 'in_progress' },
+      ];
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={currentFilters}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+        />
+      );
+
+      const saveButton = screen.getByLabelText('Save view changes');
+      expect(saveButton).toBeInTheDocument();
+    });
+  });
 });
