@@ -195,8 +195,8 @@ export const rows: Row[] = [
 //
 export const views: ViewConfig[] = [
   {
-    id: 'view_default_812bd',
-    name: 'Default',
+    id: 'view_all_tasks',
+    name: 'All Tasks',
     columns: [
       'fld_title_aa12e',
       'fld_status_c81f3',
@@ -211,12 +211,45 @@ export const views: ViewConfig[] = [
     groupBy: null,
   },
   {
-    id: 'view_by_status_992d1',
-    name: 'By Status',
-    columns: ['fld_title_aa12e', 'fld_status_c81f3', 'fld_owner_19ad8'],
-    sortBy: { field: 'fld_status_c81f3', direction: 'asc' },
-    filters: [],
-    groupBy: 'fld_status_c81f3',
+    id: 'view_in_progress',
+    name: 'In Progress',
+    columns: ['fld_title_aa12e', 'fld_owner_19ad8', 'fld_due_71fe3', 'fld_points_11b9e'],
+    sortBy: { field: 'fld_due_71fe3', direction: 'asc' },
+    filters: [
+      { field: 'fld_status_c81f3', operator: 'equals', value: 'opt_status_progress_29bb' },
+    ],
+    groupBy: null,
+  },
+  {
+    id: 'view_my_tasks',
+    name: 'My Tasks',
+    columns: ['fld_title_aa12e', 'fld_status_c81f3', 'fld_due_71fe3', 'fld_points_11b9e'],
+    sortBy: { field: 'fld_due_71fe3', direction: 'asc' },
+    filters: [
+      { field: 'fld_owner_19ad8', operator: 'equals', value: 'usr_tony_a19f2' },
+      { field: 'fld_status_c81f3', operator: 'not-equals', value: 'opt_status_done_77de' },
+    ],
+    groupBy: null,
+  },
+  {
+    id: 'view_urgent',
+    name: 'Urgent',
+    columns: ['fld_title_aa12e', 'fld_owner_19ad8', 'fld_tags_92f3a', 'fld_due_71fe3'],
+    sortBy: { field: 'fld_due_71fe3', direction: 'asc' },
+    filters: [
+      { field: 'fld_tags_92f3a', operator: 'contains', value: 'opt_c71d_urgent' },
+    ],
+    groupBy: null,
+  },
+  {
+    id: 'view_high_value',
+    name: 'High Value',
+    columns: ['fld_title_aa12e', 'fld_points_11b9e', 'fld_status_c81f3', 'fld_owner_19ad8'],
+    sortBy: { field: 'fld_points_11b9e', direction: 'desc' },
+    filters: [
+      { field: 'fld_points_11b9e', operator: 'gte', value: 3 },
+    ],
+    groupBy: null,
   },
 ];
 
