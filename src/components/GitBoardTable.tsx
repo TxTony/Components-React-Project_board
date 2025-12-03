@@ -270,6 +270,19 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // Apply view's sort configuration
     setSortConfig(view.sortBy);
 
+    // Apply view's column visibility
+    if (view.columns && view.columns.length > 0) {
+      // Get all field IDs
+      const allFieldIds = fields.map(f => f.id);
+
+      // Fields not in view.columns should be hidden
+      const fieldsToHide = allFieldIds.filter(fieldId => !view.columns.includes(fieldId));
+      setHiddenColumns(new Set(fieldsToHide));
+
+      // Set field order based on view.columns
+      setFieldOrder(view.columns);
+    }
+
     // Call parent callback if provided
     if (onViewChange) {
       onViewChange(view);
