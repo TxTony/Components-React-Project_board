@@ -172,8 +172,12 @@ Save and switch between different table configurations (filters, sorting, column
   - Name (editable)
   - Filters (can be saved and restored)
   - Sort configuration
-  - Column visibility and order
+  - Column visibility and order (auto-saved on change)
   - Filter count badge
+- **Auto-save features**:
+  - Column reordering automatically updates the current view
+  - Column visibility changes (show/hide) automatically update the current view
+  - Filter changes require manual save (via "Save" button)
 
 **Example**:
 ```tsx
