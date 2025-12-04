@@ -32,8 +32,8 @@ export const AddItemRow: React.FC<AddItemRowProps> = ({
     setTitle(e.target.value);
   };
 
-  // Calculate colspan: all visible fields + checkbox column if present
-  const colspan = visibleFields.length + (showSelection ? 1 : 0);
+  // Calculate colspan: all visible fields + drag handle column + checkbox column if present
+  const colspan = visibleFields.length + 1 + (showSelection ? 1 : 0);
 
   return (
     <tr className="gitboard-table__add-item-row">

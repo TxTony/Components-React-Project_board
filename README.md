@@ -155,7 +155,14 @@ module.exports = {
   - `is-not-empty` - Field has value
   - `>`, `>=`, `<`, `<=` - Numeric comparisons
 
-📖 **See [FILTER_SYSTEM.md](./FILTER_SYSTEM.md)** for complete filter documentation and Firebase/Firestore adapter instructions.
+📖 **See [FILTERS.md](./FILTERS.md)** for complete filter system documentation including:
+- Detailed filter operators and syntax
+- Mock data examples for all filter scenarios
+- Complete implementation examples
+- Filter patterns and troubleshooting
+- Testing filters
+
+📖 **See [FILTER_SYSTEM.md](./FILTER_SYSTEM.md)** for filter implementation details and Firebase/Firestore adapter instructions.
 
 ### 👁️ View Management
 
@@ -236,6 +243,13 @@ function App() {
 }
 ```
 
+📖 **See [VIEWS.md](./VIEWS.md)** for complete view management documentation including:
+- Detailed view lifecycle and data structures
+- Mock data examples for all view scenarios
+- Complete event payloads and callback examples
+- Implementation patterns and troubleshooting
+- Auto-save vs manual save behavior
+
 ### 📊 Sorting & Organization
 
 - **Click to sort** - Click column headers to sort ascending/descending
@@ -265,6 +279,61 @@ function App() {
 - **Quick add** - Type title and press Enter to create new row
 - **Empty row creation** - Add blank rows via toolbar
 - **Auto-scroll** - Newly added rows scroll into view
+
+### 🔄 Row Reordering
+
+Drag and drop rows to reorder them manually:
+
+- **Drag-and-drop interface** - Click and drag any row to a new position
+- **Visual feedback** - Rows show dragging state and drop target indicators
+- **Event emission** - `onRowsReorder` callback provides complete reorder details
+- **Controlled updates** - Parent component controls the final row order
+- **Works with filters** - Reorder filtered/sorted rows seamlessly
+- **Payload includes**:
+  - `fromIndex` - Original position of moved row
+  - `toIndex` - New position of moved row
+  - `rows` - Complete reordered rows array
+  - `movedRow` - The specific row that was moved
+
+**Example**:
+```tsx
+import { GitBoardTable } from '@txtony/gitboard-table';
+import type { RowReorderEvent } from '@txtony/gitboard-table';
+
+function App() {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+
+  const handleRowsReorder = async (event: RowReorderEvent) => {
+    console.log('Row moved from', event.fromIndex, 'to', event.toIndex);
+
+    // Update local state immediately
+    setRows(event.rows);
+
+    // Persist to backend
+    await api.saveRowOrder({
+      rowId: event.movedRow.id,
+      newPosition: event.toIndex
+    });
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      onChange={setRows}
+      onRowsReorder={handleRowsReorder}
+    />
+  );
+}
+```
+
+📖 **See [ROWS.md](./ROWS.md)** for complete row reordering documentation including:
+- Detailed event payload structure
+- Mock data examples for all reordering scenarios
+- Complete implementation patterns
+- Backend integration examples
+- Testing row reordering
+- Troubleshooting common issues
 
 ### 🎨 Theme Support
 

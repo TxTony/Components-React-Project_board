@@ -767,3 +767,164 @@ describe('GitBoardTable', () => {
     });
   });
 });
+
+describe('GitBoardTable - Row Reordering', () => {
+  const testFields = [
+    { id: 'fld_title', name: 'Title', type: 'text' as const, visible: true },
+    { id: 'fld_status', name: 'Status', type: 'single-select' as const, visible: true },
+  ];
+
+  const testRows = [
+    { id: 'row_1', values: { fld_title: 'Task 1', fld_status: 'To Do' } },
+    { id: 'row_2', values: { fld_title: 'Task 2', fld_status: 'In Progress' } },
+    { id: 'row_3', values: { fld_title: 'Task 3', fld_status: 'Done' } },
+  ];
+
+  it('calls onRowsReorder with correct payload when rows are reordered', async () => {
+    const onRowsReorder = vi.fn();
+    const onChange = vi.fn();
+
+    render(
+      <GitBoardTable
+        fields={testFields}
+        rows={testRows}
+        onRowsReorder={onRowsReorder}
+        onChange={onChange}
+      />
+    );
+
+    // Simulate drag and drop by finding the first row and triggering events
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1]; // Skip header row
+    const thirdDataRow = rows[3];
+
+    // Simulate drag start on first row
+    fireEvent.dragStart(firstDataRow);
+
+    // Simulate drag over on third row
+    fireEvent.dragOver(thirdDataRow);
+
+    // Simulate drop on third row
+    fireEvent.drop(thirdDataRow);
+
+    // Verify onRowsReorder was called with correct payload
+    expect(onRowsReorder).toHaveBeenCalledTimes(1);
+    expect(onRowsReorder).toHaveBeenCalledWith({
+      fromIndex: 0,
+      toIndex: 2,
+      rows: expect.arrayContaining([
+        expect.objectContaining({ id: 'row_2' }),
+        expect.objectContaining({ id: 'row_3' }),
+        expect.objectContaining({ id: 'row_1' }),
+      ]),
+      movedRow: expect.objectContaining({ id: 'row_1' }),
+    });
+
+    // Verify onChange was also called
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('reorders rows correctly when dragging from top to bottom', async () => {
+    const onRowsReorder = vi.fn();
+
+    render(
+      <GitBoardTable
+        fields={testFields}
+        rows={testRows}
+        onRowsReorder={onRowsReorder}
+      />
+    );
+
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1];
+    const thirdDataRow = rows[3];
+
+    fireEvent.dragStart(firstDataRow);
+    fireEvent.dragOver(thirdDataRow);
+    fireEvent.drop(thirdDataRow);
+
+    // Verify the rows were reordered in the correct order
+    const reorderedRows = onRowsReorder.mock.calls[0][0].rows;
+    expect(reorderedRows[0].id).toBe('row_2');
+    expect(reorderedRows[1].id).toBe('row_3');
+    expect(reorderedRows[2].id).toBe('row_1');
+  });
+
+  it('reorders rows correctly when dragging from bottom to top', async () => {
+    const onRowsReorder = vi.fn();
+
+    render(
+      <GitBoardTable
+        fields={testFields}
+        rows={testRows}
+        onRowsReorder={onRowsReorder}
+      />
+    );
+
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1];
+    const thirdDataRow = rows[3];
+
+    fireEvent.dragStart(thirdDataRow);
+    fireEvent.dragOver(firstDataRow);
+    fireEvent.drop(firstDataRow);
+
+    // Verify the rows were reordered in the correct order
+    const reorderedRows = onRowsReorder.mock.calls[0][0].rows;
+    expect(reorderedRows[0].id).toBe('row_3');
+    expect(reorderedRows[1].id).toBe('row_1');
+    expect(reorderedRows[2].id).toBe('row_2');
+  });
+
+  it('does not call onRowsReorder when dropping on the same row', async () => {
+    const onRowsReorder = vi.fn();
+
+    render(
+      <GitBoardTable
+        fields={testFields}
+        rows={testRows}
+        onRowsReorder={onRowsReorder}
+      />
+    );
+
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1];
+
+    fireEvent.dragStart(firstDataRow);
+    fireEvent.dragOver(firstDataRow);
+    fireEvent.drop(firstDataRow);
+
+    // Verify onRowsReorder was not called
+    expect(onRowsReorder).not.toHaveBeenCalled();
+  });
+
+  it('handles row reordering with filtered rows', async () => {
+    const onRowsReorder = vi.fn();
+
+    const testFieldsWithOptions = [
+      { id: 'fld_title', name: 'Title', type: 'text' as const, visible: true },
+      {
+        id: 'fld_status',
+        name: 'Status',
+        type: 'single-select' as const,
+        visible: true,
+        options: [
+          { id: 'status_1', label: 'To Do' },
+          { id: 'status_2', label: 'In Progress' },
+          { id: 'status_3', label: 'Done' },
+        ],
+      },
+    ];
+
+    render(
+      <GitBoardTable
+        fields={testFieldsWithOptions}
+        rows={testRows}
+        onRowsReorder={onRowsReorder}
+      />
+    );
+
+    // Initially, all 3 rows should be visible
+    expect(screen.getAllByRole('row')).toHaveLength(4); // 3 data rows + 1 header row
+  });
+});

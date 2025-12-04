@@ -24,6 +24,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onRowOpen: _onRowOpen,
   onFieldChange: _onFieldChange,
   onBulkUpdate,
+  onRowsReorder,
   contentResolver: _contentResolver,
   users: _users = [],
   iterations: _iterations = [],
@@ -322,6 +323,31 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleRowReorder = (fromIndex: number, toIndex: number) => {
+    // Create a new array with the reordered rows
+    const updatedRows = [...rows];
+    const [movedRow] = updatedRows.splice(fromIndex, 1);
+    updatedRows.splice(toIndex, 0, movedRow);
+
+    // Update internal state
+    setRows(updatedRows);
+
+    // Call parent onChange callback
+    if (onChange) {
+      onChange(updatedRows);
+    }
+
+    // Emit RowReorderEvent to parent
+    if (onRowsReorder) {
+      onRowsReorder({
+        fromIndex,
+        toIndex,
+        rows: updatedRows,
+        movedRow,
+      });
+    }
+  };
+
   const handleViewChange = (view: ViewConfig) => {
     // Update current view
     setCurrentView(view);
@@ -478,6 +504,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             onSelectCell={handleCellSelect}
             onAddItem={handleAddItem}
             onBulkUpdate={handleBulkUpdate}
+            onRowReorder={handleRowReorder}
           />
         </table>
       </div>

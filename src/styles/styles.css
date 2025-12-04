@@ -243,6 +243,72 @@
     background-color: #3b82f6;
   }
 
+  /* Row drag handle column */
+  .gitboard-table__cell--drag-handle {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    border-right: 1px solid var(--gb-border-muted);
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-table__th--drag-handle {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    padding: 0;
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-table__cell--drag-handle .gitboard-table__drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    color: var(--gb-text-tertiary);
+    opacity: 0.3;
+    cursor: grab;
+    transition: all 0.15s ease;
+    position: static;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+  }
+
+  .gitboard-table__row:hover .gitboard-table__cell--drag-handle .gitboard-table__drag-handle {
+    opacity: 1;
+    color: var(--gb-text-secondary);
+  }
+
+  .gitboard-table__cell--drag-handle .gitboard-table__drag-handle:hover {
+    color: var(--gb-accent-emphasis);
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__cell--drag-handle .gitboard-table__drag-handle:active {
+    cursor: grabbing;
+    background-color: var(--gb-bg-inset);
+  }
+
+  /* Row dragging states */
+  .gitboard-table__row--dragging {
+    opacity: 0.5;
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__row--dragging td {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__row--drag-over {
+    border-top: 2px solid var(--gb-accent-emphasis);
+  }
+
   /* Cell Input (Edit mode) */
   .gitboard-table__cell-input {
     @apply w-full px-2 py-1 border rounded;
