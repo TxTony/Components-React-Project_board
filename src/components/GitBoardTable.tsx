@@ -206,6 +206,25 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     const [movedField] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, movedField);
     setFieldOrder(newOrder);
+
+    // Update current view's column order if we have a current view and onUpdateView callback
+    if (currentView && onUpdateView) {
+      const updatedView: ViewConfig = {
+        ...currentView,
+        columns: newOrder,
+      };
+
+      // Update the view in local state
+      setViews((prevViews) =>
+        prevViews.map((v) => (v.id === updatedView.id ? updatedView : v))
+      );
+
+      // Update currentView state
+      setCurrentView(updatedView);
+
+      // Notify parent
+      onUpdateView(updatedView);
+    }
   };
 
   const handleFieldResize = (fieldId: string, width: number) => {
@@ -223,6 +242,29 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       } else {
         newSet.add(fieldId);
       }
+
+      // Update current view's visible columns if we have a current view and onUpdateView callback
+      if (currentView && onUpdateView) {
+        // Calculate visible columns (not in hiddenColumns) while preserving current order
+        const visibleColumns = fieldOrder.filter(id => !newSet.has(id));
+
+        const updatedView: ViewConfig = {
+          ...currentView,
+          columns: visibleColumns,
+        };
+
+        // Update the view in local state
+        setViews((prevViews) =>
+          prevViews.map((v) => (v.id === updatedView.id ? updatedView : v))
+        );
+
+        // Update currentView state
+        setCurrentView(updatedView);
+
+        // Notify parent
+        onUpdateView(updatedView);
+      }
+
       return newSet;
     });
   };
