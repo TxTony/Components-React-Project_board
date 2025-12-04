@@ -19,6 +19,7 @@ export interface TableBodyProps {
   onSelectCell?: (rowId: string, fieldId: string) => void;
   onAddItem?: (title: string) => void;
   onBulkUpdate?: (event: BulkUpdateEvent) => void;
+  onRowReorder?: (fromIndex: number, toIndex: number) => void;
 }
 
 export const TableBody: React.FC<TableBodyProps> = ({
@@ -32,11 +33,14 @@ export const TableBody: React.FC<TableBodyProps> = ({
   onSelectCell,
   onAddItem,
   onBulkUpdate,
+  onRowReorder,
 }) => {
   const [dragFillSource, setDragFillSource] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [dragFillTargets, setDragFillTargets] = useState<Set<string>>(new Set());
   const dragFillSourceRef = useRef<{ rowId: string; fieldId: string } | null>(null);
   const dragFillTargetsRef = useRef<Set<string>>(new Set());
+  const [draggedRowIndex, setDraggedRowIndex] = useState<number | null>(null);
+  const [dragOverRowIndex, setDragOverRowIndex] = useState<number | null>(null);
 
   const handleDragFillStart = (rowId: string, fieldId: string) => {
     const source = { rowId, fieldId };
@@ -136,9 +140,42 @@ export const TableBody: React.FC<TableBodyProps> = ({
     onBulkUpdate(bulkUpdateEvent);
   };
 
+  // Row reordering handlers
+  const handleRowDragStart = (index: number) => {
+    setDraggedRowIndex(index);
+  };
+
+  const handleRowDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedRowIndex === null || draggedRowIndex === index) return;
+    setDragOverRowIndex(index);
+  };
+
+  const handleRowDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedRowIndex === null || draggedRowIndex === dropIndex) {
+      setDraggedRowIndex(null);
+      setDragOverRowIndex(null);
+      return;
+    }
+
+    // Emit the reorder event
+    if (onRowReorder) {
+      onRowReorder(draggedRowIndex, dropIndex);
+    }
+
+    setDraggedRowIndex(null);
+    setDragOverRowIndex(null);
+  };
+
+  const handleRowDragEnd = () => {
+    setDraggedRowIndex(null);
+    setDragOverRowIndex(null);
+  };
+
   return (
     <tbody className="gitboard-table__tbody">
-      {rows.map((row) => (
+      {rows.map((row, index) => (
         <Row
           key={row.id}
           row={row}
@@ -152,6 +189,13 @@ export const TableBody: React.FC<TableBodyProps> = ({
           onDragFillStart={handleDragFillStart}
           onDragFillMove={handleDragFillMove}
           dragFillTargets={dragFillTargets}
+          rowIndex={index}
+          isDragging={draggedRowIndex === index}
+          isDragOver={dragOverRowIndex === index}
+          onRowDragStart={handleRowDragStart}
+          onRowDragOver={handleRowDragOver}
+          onRowDrop={handleRowDrop}
+          onRowDragEnd={handleRowDragEnd}
         />
       ))}
       <AddItemRow

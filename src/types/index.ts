@@ -143,6 +143,7 @@ export interface GitBoardTableProps {
   onRowOpen?: (row: Row) => void;
   onFieldChange?: (fields: FieldDefinition[]) => void;
   onBulkUpdate?: (event: BulkUpdateEvent) => void;
+  onRowsReorder?: (event: RowReorderEvent) => void;  // Called when rows are reordered
   contentResolver?: (id: UID) => Promise<ContentItem>;
   users?: User[];
   iterations?: Iteration[];
@@ -206,4 +207,14 @@ export interface BulkUpdateEvent {
   };
   targetCells: BulkUpdateTarget[];
   field: FieldDefinition;
+}
+
+/**
+ * Row reorder event (drag-and-drop row reordering)
+ */
+export interface RowReorderEvent {
+  fromIndex: number;      // Original position of the moved row
+  toIndex: number;        // New position of the moved row
+  rows: Row[];            // Complete rows array in new order
+  movedRow: Row;          // The row that was moved
 }

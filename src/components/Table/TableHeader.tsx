@@ -128,6 +128,8 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
   return (
     <thead className="gitboard-table__thead">
       <tr>
+        {/* Drag handle column header */}
+        <th className="gitboard-table__th gitboard-table__th--drag-handle" aria-label="Drag handle column"></th>
         {showSelection && (
           <th className="gitboard-table__th gitboard-table__th--checkbox">
             <input
