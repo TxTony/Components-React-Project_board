@@ -45,6 +45,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const [cursorPosition, setCursorPosition] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const isTypingRef = useRef<boolean>(false);
 
   // Serialize FilterConfig array into filter string
   const serializeFilters = (filterConfigs: FilterConfig[]): string => {
@@ -87,6 +88,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   // Sync input value with filters prop when it changes externally
   useEffect(() => {
+    // Don't update input if user is actively typing
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      return;
+    }
+    
     const serialized = serializeFilters(filters);
     // Only update if different to avoid infinite loops
     if (serialized !== inputValue) {
@@ -316,6 +323,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     const value = e.target.value;
     const cursor = e.target.selectionStart || 0;
 
+    // Mark that user is actively typing
+    isTypingRef.current = true;
+    
     setInputValue(value);
     setCursorPosition(cursor);
 
