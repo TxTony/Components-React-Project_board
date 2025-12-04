@@ -3,7 +3,7 @@
  * Main table component with GitHub Projects-style interface
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TableHeader } from './Table/TableHeader';
 import { TableBody } from './Table/TableBody';
 import { FilterBar } from './Toolbar/FilterBar';
@@ -34,6 +34,12 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onCreateView,
   onUpdateView,
 }) => {
+  // Memoize field IDs to prevent unnecessary re-renders
+  const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
+  
+  // Memoize initial views stringified to detect actual changes
+  const initialViewsKey = useMemo(() => JSON.stringify(initialViews), [initialViews]);
+  
   const [views, setViews] = useState<ViewConfig[]>(initialViews);
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [currentView, setCurrentView] = useState<ViewConfig | null>(
@@ -50,10 +56,25 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   const [fieldOrder, setFieldOrder] = useState<string[]>(fields.map((f) => f.id));
   const [fieldWidths, setFieldWidths] = useState<Record<string, number>>({});
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  
+  // Ref to track previous initialRows to avoid unnecessary updates
+  const prevInitialRowsRef = useRef<Row[]>();
 
   // Update internal state when props change
   useEffect(() => {
-    setRows(initialRows);
+    // Deep comparison using JSON.stringify is expensive, so we only do it if reference changed
+    if (prevInitialRowsRef.current !== initialRows) {
+      const prevString = JSON.stringify(prevInitialRowsRef.current);
+      const currentString = JSON.stringify(initialRows);
+      
+      if (prevString !== currentString) {
+        setRows(initialRows);
+        prevInitialRowsRef.current = initialRows;
+      } else {
+        // Reference changed but content is same, just update ref
+        prevInitialRowsRef.current = initialRows;
+      }
+    }
   }, [initialRows]);
 
   // Load state from localStorage on mount
@@ -82,10 +103,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update field order when fields prop changes
+  // Update field order when fields prop changes (using memoized fieldIds)
   useEffect(() => {
     setFieldOrder(fields.map((f) => f.id));
-  }, [fields]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldIds]); // Only re-run when the stringified field IDs change
 
   // Apply initial view configuration on mount
   useEffect(() => {
@@ -404,10 +426,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
-  // Update views when initialViews prop changes
+  // Update views when initialViews prop changes (using memoized key)
   useEffect(() => {
     setViews(initialViews);
-  }, [initialViews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialViewsKey]); // Only re-run when the stringified views actually change
 
   // Reorder fields based on fieldOrder state and apply widths and visibility
   const orderedFields = useMemo(() => {
