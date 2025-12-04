@@ -432,6 +432,13 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialViewsKey]); // Only re-run when the stringified views actually change
 
+  // Set currentView when views array changes and currentView is null
+  useEffect(() => {
+    if (views.length > 0 && !currentView) {
+      setCurrentView(views[0]);
+    }
+  }, [views, currentView]);
+
   // Reorder fields based on fieldOrder state and apply widths and visibility
   const orderedFields = useMemo(() => {
     // Create a map of field IDs to fields for quick lookup
