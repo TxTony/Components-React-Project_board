@@ -104,6 +104,12 @@ export const Row: React.FC<RowProps> = ({
           </svg>
         </div>
       </td>
+      {/* Row number */}
+      <td className="gitboard-table__cell gitboard-table__cell--row-number">
+        <div className="gitboard-table__row-number">
+          {rowIndex !== undefined ? rowIndex + 1 : ''}
+        </div>
+      </td>
       {showSelection && (
         <td className="gitboard-table__cell gitboard-table__cell--checkbox">
           <input
