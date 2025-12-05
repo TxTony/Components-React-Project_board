@@ -699,6 +699,24 @@
     text-align: center;
   }
 
+  /* Row number */
+  .gitboard-table__th--row-number,
+  .gitboard-table__cell--row-number {
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+  }
+
+  .gitboard-table__row-number {
+    @apply flex items-center justify-center;
+    color: var(--gb-text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    user-select: none;
+  }
+
   .gitboard-table__row--selected {
     background-color: var(--gb-accent-muted) !important;
   }
