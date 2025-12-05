@@ -10,7 +10,7 @@ import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
 import { ViewTabs } from './Toolbar/ViewTabs';
 import { sortRows } from '../utils/sorting';
-import { applyAllFilters } from '../utils/filtering';
+import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
 import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig } from '@/types';
@@ -320,10 +320,14 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
 
     if (!titleField) return;
 
+    // Extract auto-fill values from active filters
+    const autoFillValues = extractAutoFillValues(filters, fields);
+
     const newRow: Row = {
       id: generateRowId(),
       values: {
-        [titleField.id]: title,
+        ...autoFillValues, // Apply auto-fill values from filters
+        [titleField.id]: title, // Title takes precedence over auto-fill
       },
     };
 

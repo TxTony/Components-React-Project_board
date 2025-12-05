@@ -212,3 +212,96 @@ export function applyAllFilters(
 
   return filtered;
 }
+
+/**
+ * Extract auto-fill values from active filters for new row creation
+ * Only processes filters with operators: 'equals', 'contains'
+ * If multiple filters exist for same field, uses the first one
+ */
+export function extractAutoFillValues(
+  filters: FilterConfig[],
+  fields: FieldDefinition[]
+): Record<string, CellValue> {
+  const autoFillValues: Record<string, CellValue> = {};
+  const processedFields = new Set<string>();
+
+  // Operators that should trigger auto-fill
+  const autoFillOperators = ['equals', 'contains'];
+
+  for (const filter of filters) {
+    // Skip if field already processed (use first filter only)
+    if (processedFields.has(filter.field)) {
+      continue;
+    }
+
+    // Skip if operator not in auto-fill list
+    if (!autoFillOperators.includes(filter.operator)) {
+      continue;
+    }
+
+    // Skip if no value
+    if (filter.value === undefined || filter.value === null || filter.value === '') {
+      continue;
+    }
+
+    // Find the field definition
+    const field = fields.find((f) => f.id === filter.field);
+    if (!field) {
+      continue;
+    }
+
+    // Mark field as processed
+    processedFields.add(filter.field);
+
+    // Extract value based on field type
+    switch (field.type) {
+      case 'text':
+      case 'title':
+        autoFillValues[filter.field] = String(filter.value);
+        break;
+
+      case 'number':
+        // Try to parse as number
+        const numValue = parseFloat(String(filter.value));
+        if (!isNaN(numValue)) {
+          autoFillValues[filter.field] = numValue;
+        }
+        break;
+
+      case 'date':
+        // Use date string directly
+        autoFillValues[filter.field] = String(filter.value);
+        break;
+
+      case 'single-select':
+      case 'assignee':
+      case 'iteration':
+        // Filter value is a label string, need to find the option ID
+        if (field.options) {
+          const option = field.options.find(
+            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+          );
+          if (option) {
+            autoFillValues[filter.field] = option.id;
+          }
+        }
+        break;
+
+      case 'multi-select':
+        // For 'contains' operator, the value is a label string
+        // For multi-select, we add it to an array
+        if (field.options) {
+          const option = field.options.find(
+            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+          );
+          if (option) {
+            // For multi-select, value should be an array of IDs
+            autoFillValues[filter.field] = [option.id];
+          }
+        }
+        break;
+    }
+  }
+
+  return autoFillValues;
+}
