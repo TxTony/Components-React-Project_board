@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { filterRows, applyGlobalSearch } from '../../src/utils/filtering';
+import { filterRows, applyGlobalSearch, extractAutoFillValues } from '../../src/utils/filtering';
 import type { Row, FieldDefinition, FilterConfig } from '../../src/types';
 
 describe('filterRows', () => {
@@ -332,5 +332,220 @@ describe('applyGlobalSearch', () => {
     const originalRows = [...rows];
     applyGlobalSearch(rows, 'test', fields);
     expect(rows).toEqual(originalRows);
+  });
+});
+
+describe('extractAutoFillValues', () => {
+  const textField: FieldDefinition = {
+    id: 'fld_title',
+    name: 'Title',
+    type: 'text',
+    visible: true,
+  };
+
+  const numberField: FieldDefinition = {
+    id: 'fld_points',
+    name: 'Points',
+    type: 'number',
+    visible: true,
+  };
+
+  const dateField: FieldDefinition = {
+    id: 'fld_date',
+    name: 'Date',
+    type: 'date',
+    visible: true,
+  };
+
+  const singleSelectField: FieldDefinition = {
+    id: 'fld_status',
+    name: 'Status',
+    type: 'single-select',
+    visible: true,
+    options: [
+      { id: 'opt_todo', label: 'Todo' },
+      { id: 'opt_progress', label: 'In Progress' },
+      { id: 'opt_done', label: 'Done' },
+    ],
+  };
+
+  const multiSelectField: FieldDefinition = {
+    id: 'fld_tags',
+    name: 'Tags',
+    type: 'multi-select',
+    visible: true,
+    options: [
+      { id: 'tag_bug', label: 'Bug' },
+      { id: 'tag_feature', label: 'Feature' },
+      { id: 'tag_enhancement', label: 'Enhancement' },
+    ],
+  };
+
+  const fields = [textField, numberField, dateField, singleSelectField, multiSelectField];
+
+  describe('Basic functionality', () => {
+    it('extracts text field value from equals filter', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'equals', value: 'Test Task' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_title: 'Test Task' });
+    });
+
+    it('extracts text field value from contains filter', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'contains', value: 'login' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_title: 'login' });
+    });
+
+    it('extracts number field value from equals filter', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_points', operator: 'equals', value: '5' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_points: 5 });
+    });
+
+    it('extracts date field value from equals filter', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_date', operator: 'equals', value: '2024-01-15' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_date: '2024-01-15' });
+    });
+  });
+
+  describe('Select fields', () => {
+    it('extracts single-select field value by converting label to ID', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'equals', value: 'In Progress' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_status: 'opt_progress' });
+    });
+
+    it('extracts multi-select field value as array with single ID', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'contains', value: 'Bug' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_tags: ['tag_bug'] });
+    });
+
+    it('handles case-insensitive label matching', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'equals', value: 'DONE' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_status: 'opt_done' });
+    });
+  });
+
+  describe('Multiple filters', () => {
+    it('extracts values from multiple filters', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'contains', value: 'login' },
+        { field: 'fld_status', operator: 'equals', value: 'Todo' },
+        { field: 'fld_points', operator: 'equals', value: '3' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({
+        fld_title: 'login',
+        fld_status: 'opt_todo',
+        fld_points: 3,
+      });
+    });
+
+    it('uses first filter when multiple filters exist for same field', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'contains', value: 'first' },
+        { field: 'fld_title', operator: 'equals', value: 'second' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({ fld_title: 'first' });
+    });
+  });
+
+  describe('Operator filtering', () => {
+    it('skips filters with non-auto-fill operators', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'is-empty' },
+        { field: 'fld_points', operator: 'gt', value: '5' },
+        { field: 'fld_status', operator: 'not-equals', value: 'Done' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({});
+    });
+
+    it('extracts only from equals and contains operators', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'equals', value: 'Task' },
+        { field: 'fld_points', operator: 'gt', value: '5' },
+        { field: 'fld_status', operator: 'contains', value: 'Todo' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({
+        fld_title: 'Task',
+        fld_status: 'opt_todo',
+      });
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('returns empty object when no filters', () => {
+      const result = extractAutoFillValues([], fields);
+      expect(result).toEqual({});
+    });
+
+    it('skips filters with empty values', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_title', operator: 'equals', value: '' },
+        { field: 'fld_points', operator: 'contains', value: null },
+        { field: 'fld_status', operator: 'equals', value: undefined },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({});
+    });
+
+    it('skips filters for non-existent fields', () => {
+      const filters: FilterConfig[] = [
+        { field: 'nonexistent', operator: 'equals', value: 'test' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({});
+    });
+
+    it('skips single-select filter when option label not found', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'equals', value: 'Nonexistent Status' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({});
+    });
+
+    it('handles invalid number values gracefully', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_points', operator: 'equals', value: 'not a number' },
+      ];
+
+      const result = extractAutoFillValues(filters, fields);
+      expect(result).toEqual({});
+    });
   });
 });
