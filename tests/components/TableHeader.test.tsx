@@ -35,9 +35,10 @@ describe('TableHeader', () => {
       );
 
       const headers = screen.getAllByRole('columnheader');
-      expect(headers[0]).toHaveTextContent('Title');
-      expect(headers[1]).toHaveTextContent('Status');
-      expect(headers[2]).toHaveTextContent('Owner');
+      // Skip drag handle (index 0) and row number (index 1) columns
+      expect(headers[2]).toHaveTextContent('Title');
+      expect(headers[3]).toHaveTextContent('Status');
+      expect(headers[4]).toHaveTextContent('Owner');
     });
 
     it('only renders visible fields', () => {
@@ -68,7 +69,7 @@ describe('TableHeader', () => {
       );
 
       const headers = screen.queryAllByRole('columnheader');
-      expect(headers).toHaveLength(0);
+      expect(headers).toHaveLength(2); // Drag handle + row number columns (no fields, no showSelection)
     });
 
     it('has proper table header structure', () => {
@@ -104,8 +105,10 @@ describe('TableHeader', () => {
         </table>
       );
 
-      const th = container.querySelector('th');
-      expect(th).toHaveStyle({ width: '300px' });
+      // Get the field column (skip drag handle and row number columns)
+      const headers = container.querySelectorAll('th');
+      const fieldHeader = headers[2]; // Drag handle (0), row number (1), field (2)
+      expect(fieldHeader).toHaveStyle({ width: '300px' });
     });
 
     it('uses default width when not specified', () => {

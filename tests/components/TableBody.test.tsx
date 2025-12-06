@@ -46,8 +46,8 @@ describe('TableBody', () => {
       const firstRow = tbody?.querySelector('tr');
       const cells = firstRow?.querySelectorAll('td');
 
-      // Should have 7 cells (all visible fields)
-      expect(cells).toHaveLength(7);
+      // Should have 9 cells (drag handle + row number + 7 visible fields)
+      expect(cells).toHaveLength(9);
     });
 
     it('renders with empty rows array', () => {
@@ -101,7 +101,7 @@ describe('TableBody', () => {
 
       const firstRow = container.querySelector('tr');
       const cells = firstRow?.querySelectorAll('td');
-      expect(cells).toHaveLength(1); // Only visible field
+      expect(cells).toHaveLength(3); // Drag handle + row number + 1 visible field
     });
   });
 
@@ -123,9 +123,10 @@ describe('TableBody', () => {
         </table>
       );
 
-      expect(screen.getByText('3')).toBeInTheDocument();
+      // Use getAllByText since numbers may appear in both row numbers and data
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
       expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0);
     });
 
     it('renders null values as empty', () => {

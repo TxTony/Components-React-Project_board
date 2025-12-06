@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GitBoardTable } from '../src/components/GitBoardTable';
 import { fields, rows } from '../src/mocks/mockData';
@@ -26,7 +26,7 @@ describe('GitBoardTable', () => {
     it('renders table with correct number of column headers', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
       const headers = container.querySelectorAll('th');
-      expect(headers).toHaveLength(8); // All visible fields + selection checkbox column
+      expect(headers).toHaveLength(10); // Drag handle + row number + selection checkbox + 7 visible fields
     });
 
     it('renders table with correct number of data rows', () => {
@@ -53,7 +53,7 @@ describe('GitBoardTable', () => {
     it('accepts empty fields array', () => {
       const { container } = render(<GitBoardTable fields={[]} rows={[]} />);
       const headers = container.querySelectorAll('th');
-      expect(headers).toHaveLength(1); // Selection checkbox column
+      expect(headers).toHaveLength(3); // Drag handle + row number + selection checkbox
     });
 
     it('accepts empty rows array', () => {
@@ -167,13 +167,13 @@ describe('GitBoardTable', () => {
 
       // Get initial column order
       const initialHeaders = Array.from(container.querySelectorAll('.gitboard-table__th'))
-        .slice(1) // Skip checkbox column
+        .slice(3) // Skip drag handle, row number, and checkbox columns
         .map((th) => th.textContent);
       expect(initialHeaders).toEqual(['First', 'Second', 'Third']);
 
       // Verify columns have drag handlers attached
       const headers = container.querySelectorAll('.gitboard-table__th');
-      const firstColumn = headers[1]; // Skip checkbox column
+      const firstColumn = headers[3]; // Skip drag handle, row number, and checkbox columns
 
       expect(firstColumn.getAttribute('draggable')).toBe('true');
       expect(firstColumn.className).toContain('gitboard-table__th--draggable');
@@ -925,6 +925,6 @@ describe('GitBoardTable - Row Reordering', () => {
     );
 
     // Initially, all 3 rows should be visible
-    expect(screen.getAllByRole('row')).toHaveLength(4); // 3 data rows + 1 header row
+    expect(screen.getAllByRole('row')).toHaveLength(5); // 1 header + 3 data rows + 1 add item row
   });
 });
