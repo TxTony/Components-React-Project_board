@@ -502,13 +502,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         fields={orderedFields}
         filters={filters}
         onFiltersChange={setFilters}
+        onToggleVisibility={handleToggleVisibility}
       />
       <Toolbar
         selectedCount={selectedRows.size}
-        onAddRow={handleAddRow}
         onDeleteSelected={handleDeleteSelected}
-        fields={orderedFields}
-        onToggleVisibility={handleToggleVisibility}
       />
       {filters.length > 0 ? (
         <div className="gitboard-table__stats">

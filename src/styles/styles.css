@@ -593,9 +593,19 @@
     border-color: var(--gb-border);
   }
 
+  .gitboard-filter-bar__container {
+    @apply flex items-center gap-3;
+    width: 100%;
+  }
+
   .gitboard-filter-bar__input-wrapper {
     @apply relative flex items-center;
-    width: 100%;
+    flex: 1;
+  }
+
+  .gitboard-filter-bar__actions {
+    @apply flex items-center gap-2;
+    flex-shrink: 0;
   }
 
   .gitboard-filter-bar__icon {

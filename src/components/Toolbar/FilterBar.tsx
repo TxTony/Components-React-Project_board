@@ -6,12 +6,14 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { ColumnVisibilityMenu } from './ColumnVisibilityMenu';
 import type { FieldDefinition, FilterConfig } from '@/types';
 
 export interface FilterBarProps {
   fields: FieldDefinition[];
   filters: FilterConfig[];
   onFiltersChange: (filters: FilterConfig[]) => void;
+  onToggleVisibility?: (fieldId: string) => void;
 }
 
 interface Suggestion {
@@ -37,6 +39,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   fields,
   filters,
   onFiltersChange,
+  onToggleVisibility,
 }) => {
   const [inputValue, setInputValue] = useState<string>('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -431,88 +434,96 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   return (
     <div className="gitboard-filter-bar">
-      <div className="gitboard-filter-bar__input-wrapper">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className="gitboard-filter-bar__icon"
-        >
-          <path d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" />
-        </svg>
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onClick={handleClick}
-          placeholder="Filter (e.g., status:equals:done title:contains:login)"
-          className="gitboard-filter-bar__input"
-          aria-label="Filter input"
-        />
-        {inputValue && (
-          <button
-            type="button"
-            onClick={() => {
-              setInputValue('');
-              onFiltersChange([]);
-              setShowSuggestions(false);
-            }}
-            className="gitboard-filter-bar__clear"
-            aria-label="Clear filters"
+      <div className="gitboard-filter-bar__container">
+        <div className="gitboard-filter-bar__input-wrapper">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="gitboard-filter-bar__icon"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+            <path d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onClick={handleClick}
+            placeholder="Filter (e.g., status:equals:done title:contains:login)"
+            className="gitboard-filter-bar__input"
+            aria-label="Filter input"
+          />
+          {inputValue && (
+            <button
+              type="button"
+              onClick={() => {
+                setInputValue('');
+                onFiltersChange([]);
+                setShowSuggestions(false);
+              }}
+              className="gitboard-filter-bar__clear"
+              aria-label="Clear filters"
             >
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        )}
-
-        {/* Suggestions dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div
-            ref={suggestionsRef}
-            className="gitboard-filter-bar__suggestions"
-            role="listbox"
-            aria-label="Filter suggestions"
-          >
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={`${suggestion.type}-${suggestion.value}-${index}`}
-                className={`gitboard-filter-bar__suggestion ${
-                  index === selectedSuggestionIndex ? 'gitboard-filter-bar__suggestion--selected' : ''
-                }`}
-                onClick={() => applySuggestion(suggestion)}
-                role="option"
-                aria-selected={index === selectedSuggestionIndex}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
-                <div className="gitboard-filter-bar__suggestion-label">
-                  <span className="gitboard-filter-bar__suggestion-type">
-                    {suggestion.type}:
-                  </span>
-                  <span className="gitboard-filter-bar__suggestion-value">
-                    {suggestion.label}
-                  </span>
-                </div>
-                {suggestion.description && (
-                  <div className="gitboard-filter-bar__suggestion-description">
-                    {suggestion.description}
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          )}
+
+          {/* Suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div
+              ref={suggestionsRef}
+              className="gitboard-filter-bar__suggestions"
+              role="listbox"
+              aria-label="Filter suggestions"
+            >
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={`${suggestion.type}-${suggestion.value}-${index}`}
+                  className={`gitboard-filter-bar__suggestion ${
+                    index === selectedSuggestionIndex ? 'gitboard-filter-bar__suggestion--selected' : ''
+                  }`}
+                  onClick={() => applySuggestion(suggestion)}
+                  role="option"
+                  aria-selected={index === selectedSuggestionIndex}
+                >
+                  <div className="gitboard-filter-bar__suggestion-label">
+                    <span className="gitboard-filter-bar__suggestion-type">
+                      {suggestion.type}:
+                    </span>
+                    <span className="gitboard-filter-bar__suggestion-value">
+                      {suggestion.label}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {suggestion.description && (
+                    <div className="gitboard-filter-bar__suggestion-description">
+                      {suggestion.description}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {onToggleVisibility && (
+          <div className="gitboard-filter-bar__actions">
+            <ColumnVisibilityMenu fields={fields} onToggleVisibility={onToggleVisibility} />
           </div>
         )}
       </div>

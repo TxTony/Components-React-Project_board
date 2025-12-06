@@ -4,23 +4,15 @@
  */
 
 import React from 'react';
-import { ColumnVisibilityMenu } from './ColumnVisibilityMenu';
-import type { FieldDefinition } from '@/types';
 
 export interface ToolbarProps {
   selectedCount: number;
-  onAddRow?: () => void;
   onDeleteSelected?: () => void;
-  fields?: FieldDefinition[];
-  onToggleVisibility?: (fieldId: string) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   selectedCount,
-  onAddRow,
   onDeleteSelected,
-  fields,
-  onToggleVisibility,
 }) => {
   return (
     <div className="gitboard-table__toolbar">
@@ -44,11 +36,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             )}
           </>
         ) : null}
-      </div>
-      <div className="gitboard-table__toolbar-right">
-        {fields && onToggleVisibility && (
-          <ColumnVisibilityMenu fields={fields} onToggleVisibility={onToggleVisibility} />
-        )}
       </div>
     </div>
   );
