@@ -130,19 +130,14 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
       <tr>
         {/* Drag handle column header */}
         <th className="gitboard-table__th gitboard-table__th--drag-handle" aria-label="Drag handle column"></th>
-        {/* Row number column header */}
-        <th className="gitboard-table__th gitboard-table__th--row-number" aria-label="Row number column">#</th>
-        {showSelection && (
-          <th className="gitboard-table__th gitboard-table__th--checkbox">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={(e) => onSelectAll?.(e.target.checked)}
-              className="gitboard-table__checkbox"
-              aria-label="Select all rows"
-            />
-          </th>
-        )}
+        {/* Row number column header - clickable for selection */}
+        <th
+          className="gitboard-table__th gitboard-table__th--row-number gitboard-table__th--selectable"
+          aria-label="Row number column (click to select)"
+          title="Click row numbers to select rows"
+        >
+          #
+        </th>
         {visibleFields.map((field, index) => {
           const isDragging = draggedIndex === index;
           const isDragOver = dragOverIndex === index;

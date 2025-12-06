@@ -26,7 +26,7 @@ describe('GitBoardTable', () => {
     it('renders table with correct number of column headers', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
       const headers = container.querySelectorAll('th');
-      expect(headers).toHaveLength(10); // Drag handle + row number + selection checkbox + 7 visible fields
+      expect(headers).toHaveLength(9); // Drag handle + row number + 7 visible fields
     });
 
     it('renders table with correct number of data rows', () => {
@@ -53,7 +53,7 @@ describe('GitBoardTable', () => {
     it('accepts empty fields array', () => {
       const { container } = render(<GitBoardTable fields={[]} rows={[]} />);
       const headers = container.querySelectorAll('th');
-      expect(headers).toHaveLength(3); // Drag handle + row number + selection checkbox
+      expect(headers).toHaveLength(2); // Drag handle + row number
     });
 
     it('accepts empty rows array', () => {
@@ -167,13 +167,13 @@ describe('GitBoardTable', () => {
 
       // Get initial column order
       const initialHeaders = Array.from(container.querySelectorAll('.gitboard-table__th'))
-        .slice(3) // Skip drag handle, row number, and checkbox columns
+        .slice(2) // Skip drag handle and row number columns
         .map((th) => th.textContent);
       expect(initialHeaders).toEqual(['First', 'Second', 'Third']);
 
       // Verify columns have drag handlers attached
       const headers = container.querySelectorAll('.gitboard-table__th');
-      const firstColumn = headers[3]; // Skip drag handle, row number, and checkbox columns
+      const firstColumn = headers[2]; // Skip drag handle and row number columns
 
       expect(firstColumn.getAttribute('draggable')).toBe('true');
       expect(firstColumn.className).toContain('gitboard-table__th--draggable');
