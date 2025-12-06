@@ -727,6 +727,35 @@
     user-select: none;
   }
 
+  /* Selectable row number header */
+  .gitboard-table__th--selectable {
+    cursor: default;
+  }
+
+  /* Clickable row number cell */
+  .gitboard-table__cell--row-number {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .gitboard-table__cell--row-number:hover {
+    background-color: var(--gb-bg-subtle);
+  }
+
+  .gitboard-table__cell--row-number:hover .gitboard-table__row-number {
+    color: var(--gb-text-secondary);
+  }
+
+  /* Selected row number cell */
+  .gitboard-table__cell--selected {
+    background-color: var(--gb-accent-muted);
+  }
+
+  .gitboard-table__cell--selected .gitboard-table__row-number {
+    color: var(--gb-accent-emphasis);
+    font-weight: 600;
+  }
+
   .gitboard-table__row--selected {
     background-color: var(--gb-accent-muted) !important;
   }

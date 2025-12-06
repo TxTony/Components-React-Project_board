@@ -208,14 +208,30 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     });
   };
 
-  const handleSelectRow = (rowId: string, selected: boolean) => {
+  const handleSelectRow = (rowId: string, selected: boolean, ctrlKey = false) => {
     setSelectedRows((prev) => {
       const newSet = new Set(prev);
+
       if (selected) {
-        newSet.add(rowId);
+        if (ctrlKey) {
+          // Ctrl+Click: Add to existing selection (multi-select)
+          newSet.add(rowId);
+        } else {
+          // Regular click: Single selection
+          // If clicking the only selected row, deselect it
+          if (newSet.size === 1 && newSet.has(rowId)) {
+            newSet.delete(rowId);
+          } else {
+            // Clear all and select only this row
+            newSet.clear();
+            newSet.add(rowId);
+          }
+        }
       } else {
+        // Deselecting (from Ctrl+Click toggle on already selected row)
         newSet.delete(rowId);
       }
+
       return newSet;
     });
   };

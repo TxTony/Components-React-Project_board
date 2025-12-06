@@ -13,7 +13,7 @@ export interface RowProps {
   onEdit?: (edit: { rowId: string; fieldId: string; value: CellValue }) => void;
   showSelection?: boolean;
   isSelected?: boolean;
-  onSelect?: (rowId: string, selected: boolean) => void;
+  onSelect?: (rowId: string, selected: boolean, ctrlKey?: boolean) => void;
   selectedCell?: { rowId: string; fieldId: string } | null;
   onSelectCell?: (rowId: string, fieldId: string) => void;
   onDragFillStart?: (rowId: string, fieldId: string) => void;
@@ -104,23 +104,27 @@ export const Row: React.FC<RowProps> = ({
           </svg>
         </div>
       </td>
-      {/* Row number */}
-      <td className="gitboard-table__cell gitboard-table__cell--row-number">
+      {/* Row number - clickable for selection */}
+      <td
+        className={`gitboard-table__cell gitboard-table__cell--row-number ${isSelected ? 'gitboard-table__cell--selected' : ''}`}
+        onClick={(e) => {
+          const isCtrlClick = e.ctrlKey || e.metaKey;
+          // Support Ctrl+Click for multi-selection
+          if (isCtrlClick) {
+            // Multi-select: toggle this row
+            onSelect?.(row.id, !isSelected, true);
+          } else {
+            // Single select: this is handled in GitBoardTable to clear others
+            onSelect?.(row.id, true, false);
+          }
+        }}
+        style={{ cursor: 'pointer' }}
+        title={isSelected ? 'Click to deselect • Ctrl+Click to multi-select' : 'Click to select • Ctrl+Click to multi-select'}
+      >
         <div className="gitboard-table__row-number">
           {rowIndex !== undefined ? rowIndex + 1 : ''}
         </div>
       </td>
-      {showSelection && (
-        <td className="gitboard-table__cell gitboard-table__cell--checkbox">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onSelect?.(row.id, e.target.checked)}
-            className="gitboard-table__checkbox"
-            aria-label={`Select row ${row.id}`}
-          />
-        </td>
-      )}
       {visibleFields.map((field) => {
         const value = row.values[field.id];
         const isCellSelected =

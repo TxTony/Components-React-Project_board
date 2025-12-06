@@ -78,54 +78,42 @@ describe('Row Management', () => {
   });
 
   describe('Row Selection', () => {
-    it('displays checkboxes for row selection', () => {
+    it('displays clickable row numbers for row selection', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
-      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-      // 1 header checkbox + 3 row checkboxes
-      expect(checkboxes.length).toBeGreaterThanOrEqual(3);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      // 3 row number cells (one for each row)
+      expect(rowNumbers.length).toBe(3);
     });
 
-    it('selects individual row when checkbox clicked', async () => {
+    it('selects individual row when row number clicked', async () => {
       const user = userEvent.setup();
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
-      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-      const firstRowCheckbox = checkboxes[1] as HTMLInputElement; // Skip header checkbox
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      const firstRowNumber = rowNumbers[0] as HTMLElement;
 
-      await user.click(firstRowCheckbox);
+      await user.click(firstRowNumber);
 
-      expect(firstRowCheckbox.checked).toBe(true);
+      // Check if the row is selected by looking for selected class
+      const firstRow = container.querySelector('[data-row-id="row_1_d1a9f"]');
+      expect(firstRow).toHaveClass('gitboard-table__row--selected');
     });
 
-    it('selects all rows when header checkbox clicked', async () => {
+    it('deselects row when row number clicked again', async () => {
       const user = userEvent.setup();
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
-      const headerCheckbox = container.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
-      await user.click(headerCheckbox);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      const firstRowNumber = rowNumbers[0] as HTMLElement;
 
-      const rowCheckboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      rowCheckboxes.forEach((checkbox) => {
-        expect((checkbox as HTMLInputElement).checked).toBe(true);
-      });
-    });
+      // Select
+      await user.click(firstRowNumber);
+      // Deselect
+      await user.click(firstRowNumber);
 
-    it('deselects all when header checkbox clicked again', async () => {
-      const user = userEvent.setup();
-      const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
-
-      const headerCheckbox = container.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
-
-      // Select all
-      await user.click(headerCheckbox);
-      // Deselect all
-      await user.click(headerCheckbox);
-
-      const rowCheckboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      rowCheckboxes.forEach((checkbox) => {
-        expect((checkbox as HTMLInputElement).checked).toBe(false);
-      });
+      const firstRow = container.querySelector('[data-row-id="row_1_d1a9f"]');
+      expect(firstRow).not.toHaveClass('gitboard-table__row--selected');
     });
   });
 
@@ -134,8 +122,8 @@ describe('Row Management', () => {
       const user = userEvent.setup();
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
-      const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      await user.click(checkboxes[0] as HTMLElement);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      await user.click(rowNumbers[0] as HTMLElement);
 
       const deleteButton = screen.getByRole('button', { name: /delete/i });
       expect(deleteButton).toBeInTheDocument();
@@ -154,8 +142,8 @@ describe('Row Management', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} onChange={onChange} />);
 
       // Select first row
-      const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      await user.click(checkboxes[0] as HTMLElement);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      await user.click(rowNumbers[0] as HTMLElement);
 
       // Click delete
       const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -171,10 +159,10 @@ describe('Row Management', () => {
       const onChange = vi.fn();
       const { container } = render(<GitBoardTable fields={fields} rows={rows} onChange={onChange} />);
 
-      // Select first two rows
-      const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      await user.click(checkboxes[0] as HTMLElement);
-      await user.click(checkboxes[1] as HTMLElement);
+      // Select first two rows (use Ctrl+Click for multi-selection)
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      await user.click(rowNumbers[0] as HTMLElement);
+      await user.click(rowNumbers[1] as HTMLElement, { ctrlKey: true });
 
       // Click delete
       const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -190,8 +178,8 @@ describe('Row Management', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
       // Select and delete
-      const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      await user.click(checkboxes[0] as HTMLElement);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      await user.click(rowNumbers[0] as HTMLElement);
 
       const deleteButton = screen.getByRole('button', { name: /delete/i });
       await user.click(deleteButton);
@@ -206,9 +194,9 @@ describe('Row Management', () => {
       const user = userEvent.setup();
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
 
-      const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
-      await user.click(checkboxes[0] as HTMLElement);
-      await user.click(checkboxes[1] as HTMLElement);
+      const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
+      await user.click(rowNumbers[0] as HTMLElement);
+      await user.click(rowNumbers[1] as HTMLElement, { ctrlKey: true });
 
       expect(screen.getByText(/2 selected/i)).toBeInTheDocument();
     });
