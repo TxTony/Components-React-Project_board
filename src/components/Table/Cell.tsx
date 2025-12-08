@@ -46,9 +46,9 @@ export const Cell: React.FC<CellProps> = ({
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
   const renderValue = () => {
-    // Handle null/undefined
+    // Handle null/undefined - show placeholder for empty cells
     if (value === null || value === undefined) {
-      return '';
+      return <span className="text-gray-400 italic">—</span>;
     }
 
     // Handle arrays (multi-select, tags)

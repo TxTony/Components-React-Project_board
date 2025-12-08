@@ -198,6 +198,7 @@
   .gitboard-table__cell-content {
     @apply truncate;
     max-width: 100%;
+    min-height: 24px;
     color: var(--gb-text-primary);
   }
 
