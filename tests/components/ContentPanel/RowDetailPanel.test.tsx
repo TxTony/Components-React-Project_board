@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RowDetailPanel } from '@/components/ContentPanel/RowDetailPanel';
-import type { Row } from '@/types';
+import type { Row, FieldDefinition } from '@/types';
 
 describe('RowDetailPanel', () => {
   const mockRow: Row = {
@@ -30,8 +30,29 @@ graph TD
     },
   };
 
+  const mockFields: FieldDefinition[] = [
+    {
+      id: 'fld_title',
+      type: 'text',
+      name: 'Title',
+      visible: true,
+    },
+    {
+      id: 'fld_status',
+      type: 'single-select',
+      name: 'Status',
+      visible: true,
+      options: [
+        { id: 'todo', label: 'Todo' },
+        { id: 'progress', label: 'In Progress' },
+        { id: 'done', label: 'Done' },
+      ],
+    },
+  ];
+
   const defaultProps = {
     row: mockRow,
+    fields: mockFields,
     isOpen: true,
     onClose: vi.fn(),
     onContentUpdate: vi.fn(),

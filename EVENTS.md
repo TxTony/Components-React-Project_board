@@ -8,6 +8,14 @@ This document describes all events emitted by the GitBoardTable component and th
 2. [onBulkUpdate - Drag-Fill Operations](#onbulkupdate---drag-fill-operations)
 3. [onRowOpen - Row Click/Open](#onrowopen---row-clickopen)
 4. [onFieldChange - Field Definition Changes](#onfieldchange---field-definition-changes)
+5. [onContentUpdate - Row Content Changes](#oncontentupdaterow-content-changes)
+6. [onRowsReorder - Row Reordering](#onrowsreorder---row-reordering)
+7. [View Events](#view-events)
+   - [onViewChange - View Switching](#onviewchange---view-switching)
+   - [onCreateView - View Creation](#oncreateview---view-creation)
+   - [onUpdateView - View Updates](#onupdateview---view-updates)
+   - [onDeleteView - View Deletion](#ondeleteview---view-deletion)
+8. [Column Values Events (Detail Panel)](#column-values-events-detail-panel)
 
 ---
 
@@ -503,13 +511,26 @@ interface GitBoardTableProps {
   tableId?: string;  // For localStorage persistence
   users?: User[];
   iterations?: Iteration[];
+  
+  // View Management
+  views?: ViewConfig[];
   initialView?: ViewConfig;
 
-  // Event Handlers
-  onChange?: (rows: Row[]) => void;              // ✅ Implemented
-  onBulkUpdate?: (event: BulkUpdateEvent) => void;  // ✅ Implemented
-  onRowOpen?: (row: Row) => void;                // 🚧 Planned
-  onFieldChange?: (fields: FieldDefinition[]) => void;  // 🚧 Planned
+  // Event Handlers - Data Changes
+  onChange?: (rows: Row[]) => void;                           // ✅ Implemented
+  onBulkUpdate?: (event: BulkUpdateEvent) => void;           // ✅ Implemented
+  onRowsReorder?: (event: RowReorderEvent) => void;          // ✅ Implemented
+  onContentUpdate?: (rowId: UID, content: RowContent) => void; // ✅ Implemented
+  
+  // Event Handlers - UI Actions
+  onRowOpen?: (row: Row) => void;                            // ✅ Implemented
+  onFieldChange?: (fields: FieldDefinition[]) => void;       // 🚧 Planned
+  
+  // Event Handlers - View Management
+  onViewChange?: (view: ViewConfig) => void;                 // ✅ Implemented
+  onCreateView?: (view: ViewConfig) => void;                 // ✅ Implemented
+  onUpdateView?: (view: ViewConfig) => void;                 // ✅ Implemented
+  onDeleteView?: (viewId: string) => void;                   // ✅ Implemented
 
   // Advanced Props
   contentResolver?: (id: UID) => Promise<ContentItem>;
@@ -522,13 +543,19 @@ interface GitBoardTableProps {
 
 **High Frequency Events**:
 - `onChange`: Fires on every data modification (could be multiple times per second during rapid editing)
+- `onContentUpdate`: Fires as user types in description editor (debounce recommended)
 
 **Medium Frequency Events**:
 - `onBulkUpdate`: Fires once per drag-fill operation
+- `onRowsReorder`: Fires once per row drag-and-drop
+- `onViewChange`: Fires when user switches between views
 
 **Low Frequency Events**:
+- `onCreateView`: Fires when user creates a new view
+- `onUpdateView`: Fires when user saves view changes
+- `onDeleteView`: Fires when user deletes a view
 - `onFieldChange`: Would fire when user changes table configuration
-- `onRowOpen`: Would fire when user clicks a row
+- `onRowOpen`: Fires when user clicks a row to open detail panel
 
 ---
 
@@ -687,18 +714,749 @@ const handleBulkUpdate = async (event: BulkUpdateEvent) => {
 
 ---
 
+## onContentUpdate - Row Content Changes
+
+**Trigger**: Emitted when row content (description, links, documents, diagrams) is updated in the detail panel.
+
+**Signature**:
+```typescript
+onContentUpdate?: (rowId: UID, content: RowContent) => void;
+```
+
+**Payload Parameters**:
+- `rowId`: The unique identifier of the row being updated
+- `content`: The complete updated content object
+
+**Payload Type**:
+```typescript
+interface RowContent {
+  description: string;           // Markdown text
+  mermaidDiagrams?: string[];   // Array of Mermaid graph definitions
+  links?: Link[];               // External links
+  documents?: Document[];       // Embedded documents (PDFs, images, etc.)
+  attachments?: Attachment[];   // File attachments
+}
+
+interface Link {
+  id: UID;
+  url: string;
+  title: string;
+  description?: string;
+  favicon?: string;
+}
+
+interface Document {
+  id: UID;
+  filename: string;
+  mime: string;
+  size: number;
+  url: string;
+  thumbnail?: string;
+  uploadedAt: string;     // ISO timestamp
+}
+```
+
+**Example Payload**:
+```javascript
+// rowId
+"row_test_42"
+
+// content
+{
+  description: "# Task Overview\n\nThis task involves...\n\n[Documentation](https://example.com)",
+  mermaidDiagrams: [
+    "graph TD\n  A[Start] --> B[End]"
+  ],
+  links: [
+    {
+      id: "link_1",
+      url: "https://example.com",
+      title: "Documentation"
+    }
+  ],
+  documents: [],
+  attachments: []
+}
+```
+
+**Usage Example**:
+```typescript
+const handleContentUpdate = async (rowId: string, content: RowContent) => {
+  console.log(`Content updated for row ${rowId}`);
+  
+  // Save to backend
+  await api.updateRowContent(rowId, content);
+  
+  // Update analytics
+  trackEvent('row_content_updated', {
+    rowId,
+    hasDescription: !!content.description,
+    linkCount: content.links?.length || 0,
+    diagramCount: content.mermaidDiagrams?.length || 0,
+  });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onContentUpdate={handleContentUpdate}
+/>
+```
+
+**When It Fires**:
+
+1. **Description Edit**: User modifies markdown content in the UnifiedDescriptionEditor
+2. **Link Addition**: User pastes a URL into the description
+3. **Mermaid Diagram**: User adds or modifies a ```mermaid code block
+4. **Document Upload**: User uploads a file attachment
+
+---
+
+## onRowsReorder - Row Reordering
+
+**Trigger**: Emitted when rows are reordered via drag-and-drop.
+
+**Signature**:
+```typescript
+onRowsReorder?: (event: RowReorderEvent) => void;
+```
+
+**Payload Type**:
+```typescript
+interface RowReorderEvent {
+  fromIndex: number;  // Original position
+  toIndex: number;    // New position
+  rowId: UID;         // ID of the row being moved
+}
+
+type UID = string;
+```
+
+**Example Payload**:
+```javascript
+{
+  fromIndex: 2,
+  toIndex: 5,
+  rowId: "row_test_42"
+}
+// Row at position 2 moved to position 5
+```
+
+**Usage Example**:
+```typescript
+const handleRowsReorder = (event: RowReorderEvent) => {
+  console.log(`Row ${event.rowId} moved from position ${event.fromIndex} to ${event.toIndex}`);
+  
+  // Track analytics
+  trackEvent('row_reordered', {
+    rowId: event.rowId,
+    distance: Math.abs(event.toIndex - event.fromIndex),
+  });
+  
+  // Optional: Save new order to backend
+  await api.updateRowOrder(event);
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onChange={handleRowChange}
+  onRowsReorder={handleRowsReorder}
+/>
+```
+
+**When It Fires**:
+
+1. User clicks and drags a row number
+2. User drops the row at a new position
+3. The table updates automatically
+4. Both `onChange` (with reordered rows) and `onRowsReorder` fire
+
+**Important Notes**:
+
+- The component automatically reorders rows internally
+- `onChange` will also fire with the reordered rows array
+- `onRowsReorder` provides the specific indices for tracking/logging
+- Row order is based on the current filtered/sorted view
+
+---
+
+## View Events
+
+The GitBoardTable supports a complete view management system similar to GitHub Projects. Views allow users to save different combinations of filters, sorting, and column visibility.
+
+### onViewChange - View Switching
+
+**Trigger**: Emitted when user switches between different saved views.
+
+**Signature**:
+```typescript
+onViewChange?: (view: ViewConfig) => void;
+```
+
+**Payload Type**:
+```typescript
+interface ViewConfig {
+  id: UID;
+  name: string;
+  filters: FilterConfig[];
+  sortBy: SortConfig | null;
+  columns: UID[];  // Ordered list of visible field IDs
+}
+
+interface FilterConfig {
+  id: UID;
+  field: UID;
+  operator: FilterOperator;
+  value: any;
+}
+
+interface SortConfig {
+  field: UID;
+  direction: 'asc' | 'desc';
+}
+
+type FilterOperator = 
+  | 'equals' 
+  | 'not-equals' 
+  | 'contains' 
+  | 'not-contains' 
+  | 'is-empty' 
+  | 'is-not-empty'
+  | 'greater-than'
+  | 'less-than';
+```
+
+**Example Payload**:
+```javascript
+{
+  id: "view_my_tasks",
+  name: "My Tasks",
+  filters: [
+    {
+      id: "filter_1",
+      field: "fld_assignee",
+      operator: "equals",
+      value: "usr_tony_a19f2"
+    },
+    {
+      id: "filter_2",
+      field: "fld_status",
+      operator: "not-equals",
+      value: "opt_status_done"
+    }
+  ],
+  sortBy: {
+    field: "fld_due_date",
+    direction: "asc"
+  },
+  columns: ["fld_title", "fld_status", "fld_due_date", "fld_assignee"]
+}
+```
+
+**Usage Example**:
+```typescript
+const handleViewChange = (view: ViewConfig) => {
+  console.log('🔍 View changed:', view.name);
+  
+  // Track analytics
+  trackEvent('view_switched', {
+    viewId: view.id,
+    viewName: view.name,
+    filterCount: view.filters.length,
+  });
+  
+  // Optional: Save last viewed to localStorage
+  localStorage.setItem('lastViewId', view.id);
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onViewChange={handleViewChange}
+/>
+```
+
+### onCreateView - View Creation
+
+**Trigger**: Emitted when user creates a new view via the "+ Add view" button.
+
+**Signature**:
+```typescript
+onCreateView?: (view: ViewConfig) => void;
+```
+
+**Payload Type**: Same as `ViewConfig` above
+
+**Example Payload**:
+```javascript
+{
+  id: "view_generated_id_123",
+  name: "New View",
+  filters: [],
+  sortBy: null,
+  columns: ["fld_title", "fld_status", "fld_assignee"]
+}
+```
+
+**Usage Example**:
+```typescript
+const handleCreateView = (view: ViewConfig) => {
+  console.log('✨ View created:', view.name);
+  
+  // Add to state
+  setViews(prev => [...prev, view]);
+  
+  // Save to backend
+  await api.createView(view);
+  
+  // Track analytics
+  trackEvent('view_created', {
+    viewId: view.id,
+    viewName: view.name,
+  });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onCreateView={handleCreateView}
+/>
+```
+
+### onUpdateView - View Updates
+
+**Trigger**: Emitted when user modifies an existing view (renames, saves filter changes, etc.).
+
+**Signature**:
+```typescript
+onUpdateView?: (view: ViewConfig) => void;
+```
+
+**Payload Type**: Same as `ViewConfig` above
+
+**Example Payload**:
+```javascript
+{
+  id: "view_my_tasks",
+  name: "My Tasks (Updated)", // Name changed
+  filters: [
+    {
+      id: "filter_1",
+      field: "fld_assignee",
+      operator: "equals",
+      value: "usr_tony_a19f2"
+    }
+  ],
+  sortBy: {
+    field: "fld_priority",
+    direction: "desc"
+  },
+  columns: ["fld_title", "fld_status", "fld_priority"]
+}
+```
+
+**Usage Example**:
+```typescript
+const handleUpdateView = (view: ViewConfig) => {
+  console.log('💾 View updated:', view.name);
+  
+  // Update in state
+  setViews(prev => prev.map(v => v.id === view.id ? view : v));
+  
+  // Save to backend
+  await api.updateView(view);
+  
+  // Track analytics
+  trackEvent('view_updated', {
+    viewId: view.id,
+    changes: detectChanges(oldView, view),
+  });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onUpdateView={handleUpdateView}
+/>
+```
+
+### onDeleteView - View Deletion
+
+**Trigger**: Emitted when user deletes a view via the dropdown menu.
+
+**Signature**:
+```typescript
+onDeleteView?: (viewId: string) => void;
+```
+
+**Payload**: String - the unique identifier of the deleted view
+
+**Example Payload**:
+```javascript
+"view_my_tasks"
+```
+
+**Usage Example**:
+```typescript
+const handleDeleteView = async (viewId: string) => {
+  console.log('🗑️ View deleted:', viewId);
+  
+  // Confirm deletion
+  const confirmed = await confirm('Delete this view?');
+  if (!confirmed) return;
+  
+  // Remove from state
+  setViews(prev => prev.filter(v => v.id !== viewId));
+  
+  // Delete from backend
+  await api.deleteView(viewId);
+  
+  // Track analytics
+  trackEvent('view_deleted', { viewId });
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  views={views}
+  onDeleteView={handleDeleteView}
+/>
+```
+
+**Complete View Management Example**:
+
+```typescript
+const MyComponent = () => {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+  const [views, setViews] = useState<ViewConfig[]>(initialViews);
+  const [currentView, setCurrentView] = useState<ViewConfig | null>(views[0] || null);
+
+  const handleViewChange = (view: ViewConfig) => {
+    console.log('Switching to view:', view.name);
+    setCurrentView(view);
+    trackEvent('view_switched', { viewName: view.name });
+  };
+
+  const handleCreateView = async (view: ViewConfig) => {
+    // Add to local state
+    setViews(prev => [...prev, view]);
+    
+    // Persist to backend
+    await api.createView(view);
+    
+    toast.success(`View "${view.name}" created`);
+  };
+
+  const handleUpdateView = async (view: ViewConfig) => {
+    // Update local state
+    setViews(prev => prev.map(v => v.id === view.id ? view : v));
+    
+    // Persist to backend
+    await api.updateView(view);
+    
+    toast.success(`View "${view.name}" updated`);
+  };
+
+  const handleDeleteView = async (viewId: string) => {
+    const view = views.find(v => v.id === viewId);
+    
+    // Remove from state
+    setViews(prev => prev.filter(v => v.id !== viewId));
+    
+    // If current view was deleted, switch to first available
+    if (currentView?.id === viewId) {
+      setCurrentView(views[0] || null);
+    }
+    
+    // Persist to backend
+    await api.deleteView(viewId);
+    
+    toast.success(`View "${view?.name}" deleted`);
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      views={views}
+      initialView={currentView}
+      onChange={setRows}
+      onViewChange={handleViewChange}
+      onCreateView={handleCreateView}
+      onUpdateView={handleUpdateView}
+      onDeleteView={handleDeleteView}
+    />
+  );
+};
+```
+
+---
+
+## Column Values Events (Detail Panel)
+
+The detail panel includes a **ColumnValuesList** component that allows editing row values directly from the side panel. These events are handled internally by the GitBoardTable but trigger the same `onChange` callback.
+
+### Internal Event: onRowUpdate
+
+**Trigger**: Emitted when a column value is edited in the detail panel's column values list.
+
+**Internal Signature** (RowDetailPanel):
+```typescript
+onRowUpdate?: (rowId: string, fieldId: string, value: CellValue) => void;
+```
+
+**Payload Parameters**:
+- `rowId`: The unique identifier of the row being updated
+- `fieldId`: The unique identifier of the field (column) being updated
+- `value`: The new value for the cell
+
+**Payload Types**:
+```typescript
+type CellValue =
+  | string           // Text, title, single-select option ID
+  | number           // Numeric fields
+  | string[]         // Multi-select option IDs
+  | null             // Empty/cleared value
+  | undefined;       // Unset value
+
+type UID = string;
+```
+
+**Example Payloads**:
+
+```javascript
+// Text field update
+onRowUpdate("row_42", "fld_title_aa12e", "Updated Task Title")
+
+// Status (single-select) update
+onRowUpdate("row_42", "fld_status_c81f3", "opt_status_progress_29bb")
+
+// Number field update
+onRowUpdate("row_42", "fld_estimate_88a2", 8)
+
+// Date field update
+onRowUpdate("row_42", "fld_due_date_77c1", "2025-12-31")
+
+// Clearing a value
+onRowUpdate("row_42", "fld_owner_19ad8", null)
+```
+
+**How It Works**:
+
+When a user edits a value in the ColumnValuesList component:
+
+1. **User Action**: Clicks on a field value in the detail panel
+2. **Edit Mode**: Field becomes editable (input, select, date picker, etc.)
+3. **Value Change**: User modifies the value
+4. **onRowUpdate Fires**: `RowDetailPanel` calls `onRowUpdate(rowId, fieldId, newValue)`
+5. **GitBoardTable Handler**: `handleRowValueUpdate` processes the update
+6. **Cell Edit Reuse**: Calls `handleCellEdit` to update the row data
+7. **onChange Fires**: Parent receives updated rows via `onChange` callback
+8. **Panel Refresh**: Detail panel updates to show the new value
+
+**Internal Handler (GitBoardTable)**:
+```typescript
+const handleRowValueUpdate = (rowId: string, fieldId: string, value: CellValue) => {
+  // Reuse the existing handleCellEdit logic
+  handleCellEdit({ rowId, fieldId, value });
+
+  // Update the detail panel row to reflect changes
+  const updatedRows = rows.map((row) => {
+    if (row.id === rowId) {
+      return {
+        ...row,
+        values: {
+          ...row.values,
+          [fieldId]: value,
+        },
+      };
+    }
+    return row;
+  });
+
+  const updatedRow = updatedRows.find((r) => r.id === rowId);
+  if (updatedRow) {
+    setDetailPanelRow(updatedRow);
+  }
+};
+```
+
+**Parent Component Perspective**:
+
+From the parent component's perspective, column value edits in the detail panel are **indistinguishable from table cell edits**. Both trigger the same `onChange` event:
+
+```typescript
+const MyComponent = () => {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+
+  const handleChange = (updatedRows: Row[]) => {
+    console.log('Rows updated - could be from table OR detail panel');
+    setRows(updatedRows);
+    
+    // Save to backend
+    api.saveRows(updatedRows);
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      onChange={handleChange}  // ← Receives updates from BOTH sources
+    />
+  );
+};
+```
+
+**Field Type Behaviors in ColumnValuesList**:
+
+| Field Type | Edit Behavior | Value Type | Example |
+|------------|---------------|------------|---------|
+| **text** | Click to edit with text input | `string` | `"Task Title"` |
+| **title** | Click to edit with text input | `string` | `"Main Task"` |
+| **number** | Click to edit with number input | `number` | `42` |
+| **date** | Click to edit with date picker | `string` (ISO date) | `"2025-12-31"` |
+| **single-select** | Dropdown menu (instant update) | `string` (option ID) | `"opt_status_done_77de"` |
+| **multi-select** | Display only (not editable yet) | `string[]` | `["opt_1", "opt_2"]` |
+| **assignee** | Display only (not editable yet) | `string` (user ID) | `"usr_tony_a19f2"` |
+| **iteration** | Display only (not editable yet) | `string` (iteration ID) | `"itr_week_1_baa21"` |
+
+**Keyboard Shortcuts**:
+
+- **Enter**: Save the current edit
+- **Escape**: Cancel the current edit and revert to original value
+- **Tab**: Save and move to next field (planned)
+
+**Visual States**:
+
+- **Default**: Value displayed with hover effect
+- **Editing**: Input field with blue border and focus ring
+- **Empty**: Displays placeholder text in gray italic
+- **Select Fields**: Always show dropdown (no edit mode)
+
+**Usage Example - Monitoring Column Changes**:
+
+```typescript
+const MyComponent = () => {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+  const [lastEdit, setLastEdit] = useState<{field: string, value: any} | null>(null);
+
+  const handleChange = (updatedRows: Row[]) => {
+    // Find what changed
+    const changedRow = updatedRows.find((r, i) => 
+      JSON.stringify(r) !== JSON.stringify(rows[i])
+    );
+    
+    if (changedRow) {
+      // Detect which field changed
+      const oldRow = rows.find(r => r.id === changedRow.id);
+      if (oldRow) {
+        const changedFieldId = Object.keys(changedRow.values).find(
+          fieldId => changedRow.values[fieldId] !== oldRow.values[fieldId]
+        );
+        
+        if (changedFieldId) {
+          setLastEdit({
+            field: changedFieldId,
+            value: changedRow.values[changedFieldId]
+          });
+        }
+      }
+    }
+    
+    setRows(updatedRows);
+  };
+
+  return (
+    <>
+      {lastEdit && (
+        <div>Last edit: {lastEdit.field} = {lastEdit.value}</div>
+      )}
+      <GitBoardTable
+        fields={fields}
+        rows={rows}
+        onChange={handleChange}
+      />
+    </>
+  );
+};
+```
+
+**Component Architecture**:
+
+```
+GitBoardTable
+  └── RowDetailPanel
+        ├── UnifiedDescriptionEditor
+        │     └── onChange(description, metadata)
+        │           └── triggers onContentUpdate
+        │
+        └── ColumnValuesList
+              ├── Text/Number/Date fields: inline editing
+              ├── Single-select: dropdown selection
+              └── onValueChange(fieldId, value)
+                    └── triggers onRowUpdate
+                          └── triggers handleCellEdit
+                                └── triggers onChange
+```
+
+**Best Practices**:
+
+1. **Always handle `onChange`**: Column value edits flow through the same `onChange` callback as table edits
+2. **Keep state synchronized**: Use React state and pass it to both `rows` prop and `onChange` handler
+3. **Validate on change**: Add validation logic in your `onChange` handler if needed
+4. **Debounce saves**: Consider debouncing backend saves for text field edits
+5. **Handle errors gracefully**: Show user feedback if a save fails
+
+**Future Enhancements**:
+
+- Editable multi-select fields with checkbox dropdown
+- Editable assignee fields with user picker
+- Editable iteration fields with iteration selector
+- Inline validation feedback
+- Undo/redo support for detail panel edits
+- Optimistic updates with rollback on error
+
+---
+
 ## TypeScript Import
 
 All types are exported from the package:
 
 ```typescript
 import type {
+  // Core Types
   Row,
+  RowContent,
   FieldDefinition,
-  BulkUpdateEvent,
-  BulkUpdateTarget,
+  FieldOption,
   CellValue,
   UID,
+  
+  // Content Types
+  Link,
+  Document,
+  Attachment,
+  
+  // Event Types
+  BulkUpdateEvent,
+  BulkUpdateTarget,
+  RowReorderEvent,
+  
+  // View Types
+  ViewConfig,
+  FilterConfig,
+  SortConfig,
+  FilterOperator,
+  
+  // Component Props
   GitBoardTableProps,
+  
+  // User & Iteration Types
+  User,
+  Iteration,
 } from '@txtony/gitboard-table';
 ```
