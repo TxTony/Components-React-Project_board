@@ -176,6 +176,11 @@ Create a secure and user-friendly login page for the application.
 - Remember me option
 - Form validation with helpful error messages
 
+## Resources
+- [OAuth 2.0 Documentation](https://oauth.net/2/)
+- [OWASP Authentication Guide](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
+- Design mockup: https://www.figma.com/file/abc123
+
 ## Technical Details
 \`\`\`typescript
 interface LoginForm {
@@ -185,43 +190,24 @@ interface LoginForm {
 }
 \`\`\`
 
-## Design Notes
-Follow the existing design system and ensure mobile responsiveness.`,
-      mermaidDiagrams: [
-        `graph TD
+## Authentication Flow
+
+\`\`\`mermaid
+graph TD
     A[User visits login page] --> B{Has account?}
     B -->|Yes| C[Enter credentials]
     B -->|No| D[Sign up flow]
     C --> E{Valid?}
     E -->|Yes| F[Redirect to dashboard]
     E -->|No| G[Show error message]
-    G --> C`,
-      ],
-      links: [
-        {
-          id: 'link_1_auth',
-          url: 'https://auth0.com/docs/quickstart',
-          title: 'Auth0 Quickstart Guide',
-          description: 'Documentation for OAuth integration',
-        },
-        {
-          id: 'link_2_design',
-          url: 'https://www.figma.com/design/login-page',
-          title: 'Figma Design Mockups',
-          description: 'Login page design specifications',
-        },
-      ],
-      documents: [
-        {
-          id: 'doc_1_spec',
-          filename: 'login-requirements.pdf',
-          mime: 'application/pdf',
-          size: 245000,
-          url: '/documents/login-requirements.pdf',
-          thumbnail: '/thumbnails/login-requirements.jpg',
-          uploadedAt: '2025-02-08T10:30:00Z',
-        },
-      ],
+    G --> C
+\`\`\`
+
+## Design Notes
+Follow the existing design system and ensure mobile responsiveness.`,
+      mermaidDiagrams: [],
+      links: [],
+      documents: [],
       attachments: [],
     },
   },

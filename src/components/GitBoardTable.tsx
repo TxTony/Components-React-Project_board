@@ -602,6 +602,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             onBulkUpdate={handleBulkUpdate}
             onRowReorder={handleRowReorder}
             onTitleClick={handleTitleClick}
+            onRowNumberDoubleClick={handleTitleClick}
           />
         </table>
       </div>

@@ -1,14 +1,12 @@
 /**
  * RowDetailPanel Component
  * Side panel for viewing and editing row content
- * Opens when user clicks on title column
+ * Opens when user clicks on title column or double-clicks row number
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../Shared';
-import { MermaidViewer } from './MermaidViewer';
-import { LinksViewer } from './LinksViewer';
-import { DocumentsViewer } from './DocumentsViewer';
+import { UnifiedDescriptionEditor } from './UnifiedDescriptionEditor';
 import type { Row, RowContent, Link, Document } from '@/types';
 
 export interface RowDetailPanelProps {
@@ -18,15 +16,12 @@ export interface RowDetailPanelProps {
   onContentUpdate?: (rowId: string, content: RowContent) => void;
 }
 
-type TabType = 'description' | 'links' | 'diagrams' | 'documents';
-
 export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
   row,
   isOpen,
   onClose,
   onContentUpdate,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('description');
   const [content, setContent] = useState<RowContent>(() => ({
     description: row.content?.description || '',
     mermaidDiagrams: row.content?.mermaidDiagrams || [],
@@ -67,32 +62,14 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
   }, [isOpen, onClose]);
 
   const handleDescriptionChange = useCallback(
-    (value: string) => {
-      const updatedContent = { ...content, description: value };
-      setContent(updatedContent);
-
-      if (onContentUpdate) {
-        onContentUpdate(row.id, updatedContent);
-      }
-    },
-    [content, row.id, onContentUpdate]
-  );
-
-  const handleLinksChange = useCallback(
-    (links: Link[]) => {
-      const updatedContent = { ...content, links };
-      setContent(updatedContent);
-
-      if (onContentUpdate) {
-        onContentUpdate(row.id, updatedContent);
-      }
-    },
-    [content, row.id, onContentUpdate]
-  );
-
-  const handleDocumentsChange = useCallback(
-    (documents: Document[]) => {
-      const updatedContent = { ...content, documents };
+    (value: string, metadata?: { links: Link[]; documents: Document[]; mermaidDiagrams: string[] }) => {
+      const updatedContent: RowContent = {
+        ...content,
+        description: value,
+        links: metadata?.links || [],
+        documents: metadata?.documents || [],
+        mermaidDiagrams: metadata?.mermaidDiagrams || [],
+      };
       setContent(updatedContent);
 
       if (onContentUpdate) {
@@ -113,13 +90,6 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
 
   // Get title from row values
   const title = Object.values(row.values)[0] as string || 'Untitled';
-
-  const tabs: { id: TabType; label: string; count?: number }[] = [
-    { id: 'description', label: 'Description' },
-    { id: 'links', label: 'Links', count: content.links?.length || 0 },
-    { id: 'diagrams', label: 'Diagrams', count: content.mermaidDiagrams?.length || 0 },
-    { id: 'documents', label: 'Documents', count: content.documents?.length || 0 },
-  ];
 
   return (
     <div
@@ -166,84 +136,12 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
           </Button>
         </div>
 
-        {/* Tabs */}
-        <div className="gitboard-row-detail-panel__tabs flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex-1 px-4 py-3 text-sm font-medium transition-colors
-                ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-900'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }
-              `}
-            >
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
         {/* Content */}
         <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6">
-          {/* Description Tab */}
-          {activeTab === 'description' && (
-            <div id="panel-description" role="tabpanel">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                Description
-              </h3>
-              {content.description ? (
-                <textarea
-                  role="textbox"
-                  value={content.description}
-                  onChange={(e) => handleDescriptionChange(e.target.value)}
-                  className="w-full h-96 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add a description using Markdown..."
-                />
-              ) : (
-                <div className="text-gray-500 dark:text-gray-400 text-sm">
-                  No description provided.
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Links Tab */}
-          {activeTab === 'links' && (
-            <div id="panel-links" role="tabpanel">
-              <LinksViewer
-                links={content.links || []}
-                onChange={handleLinksChange}
-              />
-            </div>
-          )}
-
-          {/* Diagrams Tab */}
-          {activeTab === 'diagrams' && (
-            <div id="panel-diagrams" role="tabpanel" data-testid="mermaid-section">
-              <MermaidViewer diagrams={content.mermaidDiagrams || []} />
-            </div>
-          )}
-
-          {/* Documents Tab */}
-          {activeTab === 'documents' && (
-            <div id="panel-documents" role="tabpanel">
-              <DocumentsViewer
-                documents={content.documents || []}
-                onChange={handleDocumentsChange}
-              />
-            </div>
-          )}
+          <UnifiedDescriptionEditor
+            value={content.description}
+            onChange={handleDescriptionChange}
+          />
         </div>
       </div>
     </div>

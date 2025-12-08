@@ -17,6 +17,12 @@ export const parseMarkdown = (markdown: string): string => {
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
 
+  // Images (must come before links to avoid conflicts)
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0;">');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
   // Bold
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
@@ -24,9 +30,6 @@ export const parseMarkdown = (markdown: string): string => {
   // Italic
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Code blocks
   html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
@@ -54,11 +57,11 @@ export const sanitizeHTML = (html: string): string => {
   // Remove script tags
   let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
-  // Remove event handlers
+  // Remove event handlers (but preserve style attribute for images)
   sanitized = sanitized.replace(/on\w+="[^"]*"/gi, '');
   sanitized = sanitized.replace(/on\w+='[^']*'/gi, '');
 
-  // Remove javascript: protocol
+  // Remove javascript: protocol (but allow data: for images)
   sanitized = sanitized.replace(/href="javascript:[^"]*"/gi, 'href="#"');
   sanitized = sanitized.replace(/href='javascript:[^']*'/gi, "href='#'");
 

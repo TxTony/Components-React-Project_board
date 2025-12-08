@@ -27,6 +27,7 @@ export interface RowProps {
   onRowDrop?: (e: React.DragEvent, index: number) => void;
   onRowDragEnd?: () => void;
   onTitleClick?: (rowId: string) => void;
+  onRowNumberDoubleClick?: (rowId: string) => void;
 }
 
 export const Row: React.FC<RowProps> = ({
@@ -49,6 +50,7 @@ export const Row: React.FC<RowProps> = ({
   onRowDrop,
   onRowDragEnd,
   onTitleClick,
+  onRowNumberDoubleClick,
 }) => {
   const visibleFields = fields.filter((field) => field.visible);
 
@@ -120,8 +122,11 @@ export const Row: React.FC<RowProps> = ({
             onSelect?.(row.id, true, false);
           }
         }}
+        onDoubleClick={() => {
+          onRowNumberDoubleClick?.(row.id);
+        }}
         style={{ cursor: 'pointer' }}
-        title={isSelected ? 'Click to deselect • Ctrl+Click to multi-select' : 'Click to select • Ctrl+Click to multi-select'}
+        title={isSelected ? 'Click to deselect • Ctrl+Click to multi-select • Double-click to open details' : 'Click to select • Ctrl+Click to multi-select • Double-click to open details'}
       >
         <div className="gitboard-table__row-number">
           {rowIndex !== undefined ? rowIndex + 1 : ''}
