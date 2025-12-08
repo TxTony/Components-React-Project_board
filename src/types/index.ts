@@ -189,6 +189,7 @@ export interface GitBoardTableProps {
   onViewChange?: (view: ViewConfig) => void;  // Called when view changes
   onCreateView?: (view: ViewConfig) => void;  // Called when new view is created
   onUpdateView?: (view: ViewConfig) => void;  // Called when view is updated
+  onDeleteView?: (viewId: string) => void;  // Called when view is deleted
 }
 
 /**
