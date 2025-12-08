@@ -9,11 +9,12 @@ import { TableBody } from './Table/TableBody';
 import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
 import { ViewTabs } from './Toolbar/ViewTabs';
+import { RowDetailPanel } from './ContentPanel/RowDetailPanel';
 import { sortRows } from '../utils/sorting';
 import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -25,6 +26,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onFieldChange: _onFieldChange,
   onBulkUpdate,
   onRowsReorder,
+  onContentUpdate,
   contentResolver: _contentResolver,
   users: _users = [],
   iterations: _iterations = [],
@@ -33,6 +35,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onViewChange,
   onCreateView,
   onUpdateView,
+  onDeleteView,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -56,6 +59,10 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   const [fieldOrder, setFieldOrder] = useState<string[]>(fields.map((f) => f.id));
   const [fieldWidths, setFieldWidths] = useState<Record<string, number>>({});
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  
+  // Row detail panel state
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+  const [detailPanelRow, setDetailPanelRow] = useState<Row | null>(null);
   
   // Ref to track previous initialRows to avoid unnecessary updates
   const prevInitialRowsRef = useRef<Row[]>();
@@ -390,6 +397,72 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleTitleClick = (rowId: string) => {
+    const row = rows.find((r) => r.id === rowId);
+    if (row) {
+      setDetailPanelRow(row);
+      setDetailPanelOpen(true);
+    }
+  };
+
+  const handleDetailPanelClose = () => {
+    setDetailPanelOpen(false);
+    // Don't clear detailPanelRow immediately to allow exit animation
+    setTimeout(() => setDetailPanelRow(null), 300);
+  };
+
+  const handleContentUpdate = (rowId: string, content: RowContent) => {
+    // Update the row's content in internal state
+    const updatedRows = rows.map((row) => {
+      if (row.id === rowId) {
+        return { ...row, content };
+      }
+      return row;
+    });
+
+    setRows(updatedRows);
+
+    // Update the detail panel row to reflect changes
+    const updatedRow = updatedRows.find((r) => r.id === rowId);
+    if (updatedRow) {
+      setDetailPanelRow(updatedRow);
+    }
+
+    // Call parent onChange callback
+    if (onChange) {
+      onChange(updatedRows);
+    }
+
+    // Call parent onContentUpdate callback
+    if (onContentUpdate) {
+      onContentUpdate(rowId, content);
+    }
+  };
+
+  const handleRowValueUpdate = (rowId: string, fieldId: string, value: CellValue) => {
+    // Reuse the existing handleCellEdit logic
+    handleCellEdit({ rowId, fieldId, value });
+
+    // Update the detail panel row to reflect changes
+    const updatedRows = rows.map((row) => {
+      if (row.id === rowId) {
+        return {
+          ...row,
+          values: {
+            ...row.values,
+            [fieldId]: value,
+          },
+        };
+      }
+      return row;
+    });
+
+    const updatedRow = updatedRows.find((r) => r.id === rowId);
+    if (updatedRow) {
+      setDetailPanelRow(updatedRow);
+    }
+  };
+
   const handleViewChange = (view: ViewConfig) => {
     // Update current view
     setCurrentView(view);
@@ -512,6 +585,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onViewChange={handleViewChange}
           onCreateView={onCreateView ? handleCreateView : undefined}
           onUpdateView={onUpdateView ? handleUpdateView : undefined}
+          onDeleteView={onDeleteView}
         />
       )}
       <FilterBar
@@ -553,9 +627,23 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             onAddItem={handleAddItem}
             onBulkUpdate={handleBulkUpdate}
             onRowReorder={handleRowReorder}
+            onTitleClick={handleTitleClick}
+            onRowNumberDoubleClick={handleTitleClick}
           />
         </table>
       </div>
+
+      {/* Row Detail Panel */}
+      {detailPanelRow && (
+        <RowDetailPanel
+          row={detailPanelRow}
+          fields={orderedFields}
+          isOpen={detailPanelOpen}
+          onClose={handleDetailPanelClose}
+          onContentUpdate={handleContentUpdate}
+          onRowUpdate={handleRowValueUpdate}
+        />
+      )}
     </div>
   );
 };

@@ -58,6 +58,11 @@ function DevApp() {
     setTableViews((prev) => prev.map((v) => (v.id === view.id ? view : v)));
   };
 
+  const handleDeleteView = (viewId: string) => {
+    console.log('🗑️ View deleted:', viewId);
+    setTableViews((prev) => prev.filter((v) => v.id !== viewId));
+  };
+
   return (
     <div className={theme} style={{ minHeight: '100vh' }}>
       <div
@@ -178,6 +183,7 @@ function DevApp() {
             onViewChange={handleViewChange}
             onCreateView={handleCreateView}
             onUpdateView={handleUpdateView}
+            onDeleteView={handleDeleteView}
             users={users}
             iterations={iterations}
             views={tableViews}
@@ -204,10 +210,19 @@ function DevApp() {
             💡 <strong>Try drag-fill:</strong> Single-click a cell, then drag the fill handle (bottom-right corner) down
           </p>
           <p style={{ marginTop: '0.5rem' }}>
+            🔍 <strong>Open details:</strong> Double-click on the row number to open the unified ContentPanel
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            ✍️ <strong>Smart editor:</strong> Edit/preview modes - paste Markdown, links, Mermaid diagrams, or <strong>images (Ctrl+V)</strong>
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            🖼️ <strong>Paste images:</strong> Take a screenshot and paste it directly (Ctrl+V) or drag & drop image files
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
             📑 <strong>Try views:</strong> Click different tabs above the table to switch between filtered views
           </p>
           <p style={{ marginTop: '0.5rem' }}>
-            ✨ <strong>Manage views:</strong> Click "+ Add view" to create new views, double-click a tab to rename, click "Save" when filters change
+            ✨ <strong>Manage views:</strong> Click "+ Add view" to create new views, double-click a tab to rename, click "Save" when filters change, click the ▼ caret to delete
           </p>
         </div>
       </div>

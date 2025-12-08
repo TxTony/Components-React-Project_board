@@ -19,7 +19,10 @@ export const DateEditor: React.FC<DateEditorProps> = ({
   onCancel,
   autoFocus = true,
 }) => {
-  const [editValue, setEditValue] = useState<string>(value?.toString() || '');
+  // Initialize with proper format for HTML date input
+  // Empty string or null should remain empty for the date picker to work
+  const initialValue = value ? value.toString() : '';
+  const [editValue, setEditValue] = useState<string>(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

@@ -25,6 +25,7 @@ export interface CellProps {
   onDragFillMove?: (rowId: string, fieldId: string) => void;
   onDragFillEnd?: () => void;
   isDragFillHovered?: boolean;
+  onTitleClick?: (rowId: string) => void;
 }
 
 export const Cell: React.FC<CellProps> = ({
@@ -39,14 +40,15 @@ export const Cell: React.FC<CellProps> = ({
   onDragFillMove,
   onDragFillEnd,
   isDragFillHovered = false,
+  onTitleClick,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
   const renderValue = () => {
-    // Handle null/undefined
+    // Handle null/undefined - show placeholder for empty cells
     if (value === null || value === undefined) {
-      return '';
+      return <span className="text-gray-400 italic">—</span>;
     }
 
     // Handle arrays (multi-select, tags)
@@ -200,6 +202,13 @@ export const Cell: React.FC<CellProps> = ({
   // Single click - ONLY select the cell (no edit mode)
   const handleClick = () => {
     if (readOnly) return;
+    
+    // If this is a title field and onTitleClick is provided, call it
+    if (field.type === 'title' && onTitleClick) {
+      onTitleClick(rowId);
+      return;
+    }
+    
     onSelect?.(rowId, field.id);
   };
 
