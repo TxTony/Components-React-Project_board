@@ -35,6 +35,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onViewChange,
   onCreateView,
   onUpdateView,
+  onDeleteView,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -560,6 +561,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onViewChange={handleViewChange}
           onCreateView={onCreateView ? handleCreateView : undefined}
           onUpdateView={onUpdateView ? handleUpdateView : undefined}
+          onDeleteView={onDeleteView}
         />
       )}
       <FilterBar

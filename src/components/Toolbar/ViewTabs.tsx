@@ -5,6 +5,7 @@
  * - Click to switch views
  * - Double-click to edit view name
  * - "+ Add view" button to create new views
+ * - Delete button (X) to remove views (visible on hover, disabled when only 1 view remains)
  * - Save button appears when filters have unsaved changes
  */
 
@@ -19,6 +20,7 @@ export interface ViewTabsProps {
   onViewChange: (view: ViewConfig) => void;
   onCreateView?: (view: ViewConfig) => void;
   onUpdateView?: (view: ViewConfig) => void;
+  onDeleteView?: (viewId: string) => void;
 }
 
 export const ViewTabs: React.FC<ViewTabsProps> = ({
@@ -28,10 +30,13 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
   onViewChange,
   onCreateView,
   onUpdateView,
+  onDeleteView,
 }) => {
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>('');
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -41,11 +46,49 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
     }
   }, [editingViewId]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    if (openDropdownId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [openDropdownId]);
+
   // Check if current view has unsaved filter changes
   const currentView = views.find((v) => v.id === currentViewId);
   const hasUnsavedChanges = currentView && (
     JSON.stringify(currentView.filters) !== JSON.stringify(currentFilters)
   );
+
+  const toggleDropdown = (viewId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenDropdownId(openDropdownId === viewId ? null : viewId);
+  };
+
+  const handleDeleteFromMenu = (viewId: string) => {
+    if (!onDeleteView) return;
+
+    // Close dropdown
+    setOpenDropdownId(null);
+
+    // If deleting the current view, switch to another view first
+    if (viewId === currentViewId && views.length > 1) {
+      const remainingViews = views.filter((v) => v.id !== viewId);
+      if (remainingViews.length > 0) {
+        onViewChange(remainingViews[0]);
+      }
+    }
+
+    onDeleteView(viewId);
+  };
 
   const handleAddView = () => {
     if (!onCreateView) return;
@@ -138,24 +181,66 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
                 aria-label="Edit view name"
               />
             ) : (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`view-${view.id}`}
-                className={`gitboard-view-tabs__tab ${
-                  isActive ? 'gitboard-view-tabs__tab--active' : ''
-                }`}
-                onClick={() => onViewChange(view)}
-                onDoubleClick={() => handleDoubleClick(view)}
-              >
-                {view.name}
-                {view.filters.length > 0 && (
-                  <span className="gitboard-view-tabs__badge">
-                    {view.filters.length}
-                  </span>
+              <>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`view-${view.id}`}
+                  className={`gitboard-view-tabs__tab ${
+                    isActive ? 'gitboard-view-tabs__tab--active' : ''
+                  }`}
+                  onClick={() => onViewChange(view)}
+                  onDoubleClick={() => handleDoubleClick(view)}
+                >
+                  {view.name}
+                  {view.filters.length > 0 && (
+                    <span className="gitboard-view-tabs__badge">
+                      {view.filters.length}
+                    </span>
+                  )}
+                  {onDeleteView && views.length > 1 && (
+                    <span
+                      className="gitboard-view-tabs__caret"
+                      onClick={(e) => toggleDropdown(view.id, e)}
+                      aria-label="Tab options"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="10"
+                        height="10"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+                {onDeleteView && views.length > 1 && openDropdownId === view.id && (
+                  <div
+                    ref={dropdownRef}
+                    className="gitboard-view-tabs__dropdown"
+                  >
+                    <button
+                      type="button"
+                      className="gitboard-view-tabs__dropdown-item gitboard-view-tabs__dropdown-item--danger"
+                      onClick={() => handleDeleteFromMenu(view.id)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M11 1.75V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675a.75.75 0 10-1.492.15l.66 6.6A1.75 1.75 0 005.405 15h5.19c.9 0 1.652-.681 1.741-1.576l.66-6.6a.75.75 0 00-1.492-.149l-.66 6.6a.25.25 0 01-.249.225h-5.19a.25.25 0 01-.249-.225l-.66-6.6z" />
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
                 )}
-              </button>
+              </>
             )}
           </div>
         );

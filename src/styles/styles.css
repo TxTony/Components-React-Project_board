@@ -805,6 +805,7 @@
 
   .gitboard-view-tabs__tab-wrapper {
     @apply relative;
+    @apply flex items-center;
   }
 
   .gitboard-view-tabs__input {
@@ -839,6 +840,48 @@
 
   .gitboard-view-tabs__save-button:hover {
     opacity: 0.9;
+  }
+
+  .gitboard-view-tabs__caret {
+    @apply inline-flex items-center justify-center ml-1;
+    color: var(--gb-text-tertiary);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .gitboard-view-tabs__caret:hover {
+    color: var(--gb-text-primary);
+  }
+
+  .gitboard-view-tabs__dropdown {
+    @apply absolute top-full left-0 mt-1;
+    @apply rounded-md shadow-lg;
+    @apply border;
+    background-color: var(--gb-bg-default);
+    border-color: var(--gb-border);
+    min-width: 150px;
+    z-index: 1000;
+  }
+
+  .gitboard-view-tabs__dropdown-item {
+    @apply flex items-center gap-2 px-3 py-2 text-sm;
+    @apply w-full text-left transition-colors;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--gb-text-primary);
+  }
+
+  .gitboard-view-tabs__dropdown-item:hover {
+    background-color: var(--gb-bg-muted);
+  }
+
+  .gitboard-view-tabs__dropdown-item--danger {
+    color: #dc2626;
+  }
+
+  .gitboard-view-tabs__dropdown-item--danger:hover {
+    background-color: rgba(220, 38, 38, 0.1);
   }
 }
 

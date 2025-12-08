@@ -1232,4 +1232,271 @@ describe('ViewTabs', () => {
       expect(saveButton).toBeInTheDocument();
     });
   });
+
+  describe('Delete View', () => {
+    it('renders caret icon when onDeleteView is provided', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.getAllByLabelText('Tab options');
+      expect(carets).toHaveLength(3);
+    });
+
+    it('does not render caret when onDeleteView is not provided', () => {
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+        />
+      );
+
+      const carets = screen.queryAllByLabelText('Tab options');
+      expect(carets).toHaveLength(0);
+    });
+
+    it('opens dropdown menu when caret is clicked', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[0]);
+
+      const deleteButton = screen.getByText('Delete');
+      expect(deleteButton).toBeInTheDocument();
+    });
+
+    it('calls onDeleteView when delete menu item is clicked', async () => {
+      const user = userEvent.setup();
+      const handleDeleteView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={handleDeleteView}
+        />
+      );
+
+      // Open dropdown for second tab (In Progress)
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[1]);
+
+      // Click delete
+      const deleteButton = screen.getByText('Delete');
+      await user.click(deleteButton);
+
+      expect(handleDeleteView).toHaveBeenCalledWith('view_filtered');
+      expect(handleDeleteView).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onViewChange when deleting non-active tab', async () => {
+      const user = userEvent.setup();
+      const handleViewChange = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={handleViewChange}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      // Open dropdown for second tab
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[1]);
+
+      // Click delete
+      const deleteButton = screen.getByText('Delete');
+      await user.click(deleteButton);
+
+      expect(handleViewChange).not.toHaveBeenCalled();
+    });
+
+    it('switches to another view before deleting when deleting active view', async () => {
+      const user = userEvent.setup();
+      const handleViewChange = vi.fn();
+      const handleDeleteView = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_filtered"
+          currentFilters={[]}
+          onViewChange={handleViewChange}
+          onDeleteView={handleDeleteView}
+        />
+      );
+
+      // Open dropdown for active tab (In Progress)
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[1]);
+
+      // Click delete
+      const deleteButton = screen.getByText('Delete');
+      await user.click(deleteButton);
+
+      // Should switch to the first view before deleting
+      expect(handleViewChange).toHaveBeenCalledWith(mockViews[0]);
+      expect(handleDeleteView).toHaveBeenCalledWith('view_filtered');
+    });
+
+    it('does not render caret when only one view exists', () => {
+      const singleView = [mockViews[0]];
+
+      render(
+        <ViewTabs
+          views={singleView}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.queryAllByLabelText('Tab options');
+      expect(carets).toHaveLength(0);
+    });
+
+    it('closes dropdown when clicking outside', async () => {
+      const user = userEvent.setup();
+
+      const { container } = render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      // Open dropdown
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[0]);
+
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+
+      // Click outside
+      await user.click(container);
+
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+
+    it('caret click does not trigger tab click', async () => {
+      const user = userEvent.setup();
+      const handleViewChange = vi.fn();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={handleViewChange}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[1]);
+
+      // Should not switch to the view
+      expect(handleViewChange).not.toHaveBeenCalled();
+    });
+
+    it('delete menu item has danger styling class', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[0]);
+
+      const deleteButton = screen.getByText('Delete');
+      expect(deleteButton).toHaveClass('gitboard-view-tabs__dropdown-item--danger');
+    });
+
+    it('delete menu item renders with trash icon', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onDeleteView={vi.fn()}
+        />
+      );
+
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[0]);
+
+      const deleteButton = screen.getByText('Delete');
+      const svg = deleteButton.querySelector('svg');
+      
+      expect(svg).toBeInTheDocument();
+      expect(svg).toHaveAttribute('width', '14');
+      expect(svg).toHaveAttribute('height', '14');
+    });
+
+    it('handles deletion of last active view correctly', async () => {
+      const user = userEvent.setup();
+      const handleViewChange = vi.fn();
+      const handleDeleteView = vi.fn();
+
+      const twoViews = [mockViews[0], mockViews[1]];
+
+      render(
+        <ViewTabs
+          views={twoViews}
+          currentViewId="view_filtered"
+          currentFilters={[]}
+          onViewChange={handleViewChange}
+          onDeleteView={handleDeleteView}
+        />
+      );
+
+      // Open dropdown for active view
+      const carets = screen.getAllByLabelText('Tab options');
+      await user.click(carets[1]);
+
+      // Click delete
+      const deleteButton = screen.getByText('Delete');
+      await user.click(deleteButton);
+
+      // Should switch to the remaining view
+      expect(handleViewChange).toHaveBeenCalledWith(twoViews[0]);
+      expect(handleDeleteView).toHaveBeenCalledWith('view_filtered');
+    });
+  });
 });
