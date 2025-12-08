@@ -7,20 +7,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../Shared';
 import { UnifiedDescriptionEditor } from './UnifiedDescriptionEditor';
-import type { Row, RowContent, Link, Document } from '@/types';
+import { ColumnValuesList } from './ColumnValuesList';
+import type { Row, RowContent, Link, Document, FieldDefinition, CellValue } from '@/types';
 
 export interface RowDetailPanelProps {
   row: Row;
+  fields: FieldDefinition[];
   isOpen: boolean;
   onClose: () => void;
   onContentUpdate?: (rowId: string, content: RowContent) => void;
+  onRowUpdate?: (rowId: string, fieldId: string, value: CellValue) => void;
 }
 
 export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
   row,
+  fields,
   isOpen,
   onClose,
   onContentUpdate,
+  onRowUpdate,
 }) => {
   const [content, setContent] = useState<RowContent>(() => ({
     description: row.content?.description || '',
@@ -77,6 +82,15 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
       }
     },
     [content, row.id, onContentUpdate]
+  );
+
+  const handleColumnValueChange = useCallback(
+    (fieldId: string, value: CellValue) => {
+      if (onRowUpdate) {
+        onRowUpdate(row.id, fieldId, value);
+      }
+    },
+    [row.id, onRowUpdate]
   );
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -137,11 +151,20 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6">
+        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6 space-y-6">
           <UnifiedDescriptionEditor
             value={content.description}
             onChange={handleDescriptionChange}
           />
+          
+          {/* Column Values Section */}
+          <div className="gitboard-row-detail-panel__columns border-t border-gray-200 dark:border-gray-700 pt-6">
+            <ColumnValuesList
+              row={row}
+              fields={fields}
+              onValueChange={handleColumnValueChange}
+            />
+          </div>
         </div>
       </div>
     </div>

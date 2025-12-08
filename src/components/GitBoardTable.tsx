@@ -439,6 +439,30 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleRowValueUpdate = (rowId: string, fieldId: string, value: CellValue) => {
+    // Reuse the existing handleCellEdit logic
+    handleCellEdit({ rowId, fieldId, value });
+
+    // Update the detail panel row to reflect changes
+    const updatedRows = rows.map((row) => {
+      if (row.id === rowId) {
+        return {
+          ...row,
+          values: {
+            ...row.values,
+            [fieldId]: value,
+          },
+        };
+      }
+      return row;
+    });
+
+    const updatedRow = updatedRows.find((r) => r.id === rowId);
+    if (updatedRow) {
+      setDetailPanelRow(updatedRow);
+    }
+  };
+
   const handleViewChange = (view: ViewConfig) => {
     // Update current view
     setCurrentView(view);
@@ -613,9 +637,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       {detailPanelRow && (
         <RowDetailPanel
           row={detailPanelRow}
+          fields={orderedFields}
           isOpen={detailPanelOpen}
           onClose={handleDetailPanelClose}
           onContentUpdate={handleContentUpdate}
+          onRowUpdate={handleRowValueUpdate}
         />
       )}
     </div>
