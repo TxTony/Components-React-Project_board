@@ -20,6 +20,7 @@ export interface TableBodyProps {
   onAddItem?: (title: string) => void;
   onBulkUpdate?: (event: BulkUpdateEvent) => void;
   onRowReorder?: (fromIndex: number, toIndex: number) => void;
+  onTitleClick?: (rowId: string) => void;
 }
 
 export const TableBody: React.FC<TableBodyProps> = ({
@@ -34,6 +35,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
   onAddItem,
   onBulkUpdate,
   onRowReorder,
+  onTitleClick,
 }) => {
   const [dragFillSource, setDragFillSource] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [dragFillTargets, setDragFillTargets] = useState<Set<string>>(new Set());
@@ -196,6 +198,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
           onRowDragOver={handleRowDragOver}
           onRowDrop={handleRowDrop}
           onRowDragEnd={handleRowDragEnd}
+          onTitleClick={onTitleClick}
         />
       ))}
       <AddItemRow
