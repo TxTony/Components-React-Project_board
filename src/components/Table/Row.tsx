@@ -26,6 +26,7 @@ export interface RowProps {
   onRowDragOver?: (e: React.DragEvent, index: number) => void;
   onRowDrop?: (e: React.DragEvent, index: number) => void;
   onRowDragEnd?: () => void;
+  onTitleClick?: (rowId: string) => void;
 }
 
 export const Row: React.FC<RowProps> = ({
@@ -47,6 +48,7 @@ export const Row: React.FC<RowProps> = ({
   onRowDragOver,
   onRowDrop,
   onRowDragEnd,
+  onTitleClick,
 }) => {
   const visibleFields = fields.filter((field) => field.visible);
 
@@ -143,6 +145,7 @@ export const Row: React.FC<RowProps> = ({
             onDragFillStart={onDragFillStart}
             onDragFillMove={onDragFillMove}
             isDragFillHovered={isDragFillHovered}
+            onTitleClick={onTitleClick}
           />
         );
       })}

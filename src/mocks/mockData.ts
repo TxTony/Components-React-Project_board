@@ -163,6 +163,67 @@ export const rows: Row[] = [
       fld_points_11b9e: 3,
       fld_iteration_6d1a2: 'itr_week_1_baa21',
     },
+    content: {
+      description: `# Login Page Implementation
+
+## Overview
+Create a secure and user-friendly login page for the application.
+
+## Requirements
+- Email/password authentication
+- OAuth integration (Google, GitHub)
+- Password reset functionality
+- Remember me option
+- Form validation with helpful error messages
+
+## Technical Details
+\`\`\`typescript
+interface LoginForm {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+\`\`\`
+
+## Design Notes
+Follow the existing design system and ensure mobile responsiveness.`,
+      mermaidDiagrams: [
+        `graph TD
+    A[User visits login page] --> B{Has account?}
+    B -->|Yes| C[Enter credentials]
+    B -->|No| D[Sign up flow]
+    C --> E{Valid?}
+    E -->|Yes| F[Redirect to dashboard]
+    E -->|No| G[Show error message]
+    G --> C`,
+      ],
+      links: [
+        {
+          id: 'link_1_auth',
+          url: 'https://auth0.com/docs/quickstart',
+          title: 'Auth0 Quickstart Guide',
+          description: 'Documentation for OAuth integration',
+        },
+        {
+          id: 'link_2_design',
+          url: 'https://www.figma.com/design/login-page',
+          title: 'Figma Design Mockups',
+          description: 'Login page design specifications',
+        },
+      ],
+      documents: [
+        {
+          id: 'doc_1_spec',
+          filename: 'login-requirements.pdf',
+          mime: 'application/pdf',
+          size: 245000,
+          url: '/documents/login-requirements.pdf',
+          thumbnail: '/thumbnails/login-requirements.jpg',
+          uploadedAt: '2025-02-08T10:30:00Z',
+        },
+      ],
+      attachments: [],
+    },
   },
   {
     id: 'row_2_e13cd',
@@ -175,6 +236,91 @@ export const rows: Row[] = [
       fld_points_11b9e: 5,
       fld_iteration_6d1a2: 'itr_week_2_e991a',
     },
+    content: {
+      description: `# API Client Refactoring
+
+## Problem Statement
+Current API client has several issues:
+- No proper error handling
+- Inconsistent response formats
+- Missing retry logic
+- No request cancellation support
+
+## Proposed Solution
+Implement a robust API client using Axios with interceptors.
+
+### Features to Add
+1. **Automatic retry** with exponential backoff
+2. **Request/response interceptors** for auth tokens
+3. **Unified error handling**
+4. **Request cancellation** using AbortController
+5. **Type-safe endpoints**
+
+## Implementation Plan
+- [ ] Create base API client class
+- [ ] Add interceptors for auth
+- [ ] Implement retry logic
+- [ ] Add TypeScript types for all endpoints
+- [ ] Write unit tests`,
+      mermaidDiagrams: [
+        `sequenceDiagram
+    participant Client
+    participant APIClient
+    participant Interceptor
+    participant Server
+    
+    Client->>APIClient: Make request
+    APIClient->>Interceptor: Apply request interceptor
+    Interceptor->>Server: Send request with auth token
+    Server->>Interceptor: Response
+    Interceptor->>APIClient: Apply response interceptor
+    APIClient->>Client: Return formatted response`,
+        `classDiagram
+    class APIClient {
+        +baseURL: string
+        +timeout: number
+        +get(url: string)
+        +post(url: string, data: any)
+        +put(url: string, data: any)
+        +delete(url: string)
+        -handleError(error: Error)
+        -retry(request: Request)
+    }
+    
+    class Interceptor {
+        +request(config: Config)
+        +response(response: Response)
+        +error(error: Error)
+    }
+    
+    APIClient --> Interceptor`,
+      ],
+      links: [
+        {
+          id: 'link_3_axios',
+          url: 'https://axios-http.com/docs/interceptors',
+          title: 'Axios Interceptors Documentation',
+          description: 'Official guide for request/response interceptors',
+        },
+        {
+          id: 'link_4_retry',
+          url: 'https://github.com/softonic/axios-retry',
+          title: 'axios-retry Library',
+          description: 'Axios plugin for automatic retry',
+        },
+      ],
+      documents: [],
+      attachments: [
+        {
+          id: 'att_1_benchmark',
+          filename: 'api-performance-benchmark.xlsx',
+          mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          size: 52000,
+          url: '/attachments/api-performance-benchmark.xlsx',
+          uploadedAt: '2025-02-05T14:20:00Z',
+        },
+      ],
+    },
   },
   {
     id: 'row_3_f8411',
@@ -186,6 +332,104 @@ export const rows: Row[] = [
       fld_due_71fe3: '2025-02-20',
       fld_points_11b9e: 2,
       fld_iteration_6d1a2: 'itr_week_3_913ff',
+    },
+    content: {
+      description: `# UI Component Library
+
+## ✅ Completed Components
+
+### Buttons
+- Primary, Secondary, Tertiary variants
+- Icon buttons
+- Loading states
+- Disabled states
+
+### Forms
+- Input fields
+- Text areas
+- Select dropdowns
+- Checkboxes & Radio buttons
+- Date pickers
+
+### Feedback
+- Alerts & Notifications
+- Modals & Dialogs
+- Tooltips
+- Progress indicators
+
+## Tech Stack
+- **React 18** + TypeScript
+- **TailwindCSS** for styling
+- **Storybook** for documentation
+- **Vitest** for testing
+
+## Usage Example
+\`\`\`tsx
+import { Button, Input } from '@company/ui-kit';
+
+function MyForm() {
+  return (
+    <form>
+      <Input label="Email" type="email" />
+      <Button variant="primary">Submit</Button>
+    </form>
+  );
+}
+\`\`\``,
+      mermaidDiagrams: [
+        `graph LR
+    A[Design System] --> B[UI Components]
+    B --> C[Button]
+    B --> D[Input]
+    B --> E[Select]
+    B --> F[Modal]
+    C --> G[Storybook]
+    D --> G
+    E --> G
+    F --> G
+    G --> H[Documentation]`,
+      ],
+      links: [
+        {
+          id: 'link_5_storybook',
+          url: 'https://storybook.ui-kit.company.com',
+          title: 'UI Kit Storybook',
+          description: 'Live component documentation',
+        },
+        {
+          id: 'link_6_npm',
+          url: 'https://www.npmjs.com/package/@company/ui-kit',
+          title: 'NPM Package',
+          description: 'Published UI kit package',
+        },
+        {
+          id: 'link_7_figma',
+          url: 'https://www.figma.com/file/ui-kit-design-system',
+          title: 'Design System in Figma',
+          description: 'Source design files',
+        },
+      ],
+      documents: [
+        {
+          id: 'doc_2_guidelines',
+          filename: 'ui-kit-guidelines.pdf',
+          mime: 'application/pdf',
+          size: 1200000,
+          url: '/documents/ui-kit-guidelines.pdf',
+          thumbnail: '/thumbnails/ui-kit-guidelines.jpg',
+          uploadedAt: '2025-02-18T09:00:00Z',
+        },
+      ],
+      attachments: [
+        {
+          id: 'att_2_screenshots',
+          filename: 'component-screenshots.zip',
+          mime: 'application/zip',
+          size: 3400000,
+          url: '/attachments/component-screenshots.zip',
+          uploadedAt: '2025-02-19T16:45:00Z',
+        },
+      ],
     },
   },
 ];

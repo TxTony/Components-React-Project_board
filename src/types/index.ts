@@ -45,12 +45,48 @@ export interface FieldDefinition {
 }
 
 /**
+ * Link entity for row content
+ */
+export interface Link {
+  id: UID;
+  url: string;
+  title: string;
+  description?: string;
+  favicon?: string;
+}
+
+/**
+ * Document entity for row content
+ */
+export interface Document {
+  id: UID;
+  filename: string;
+  mime: string;
+  size: number;
+  url: string;
+  thumbnail?: string;
+  uploadedAt: string;     // ISO timestamp
+}
+
+/**
+ * Row content structure - stores rich content for detail panel
+ */
+export interface RowContent {
+  description: string;           // Markdown text
+  mermaidDiagrams?: string[];   // Array of Mermaid graph definitions
+  links?: Link[];               // External links
+  documents?: Document[];       // Embedded documents (PDFs, images, etc.)
+  attachments?: Attachment[];   // File attachments
+}
+
+/**
  * Row data structure
  */
 export interface Row {
   id: UID;
   values: Record<UID, any>;
   contentId?: UID;
+  content?: RowContent;         // Rich content for detail panel
 }
 
 /**
@@ -144,6 +180,7 @@ export interface GitBoardTableProps {
   onFieldChange?: (fields: FieldDefinition[]) => void;
   onBulkUpdate?: (event: BulkUpdateEvent) => void;
   onRowsReorder?: (event: RowReorderEvent) => void;  // Called when rows are reordered
+  onContentUpdate?: (rowId: UID, content: RowContent) => void;  // Called when row content is updated
   contentResolver?: (id: UID) => Promise<ContentItem>;
   users?: User[];
   iterations?: Iteration[];
