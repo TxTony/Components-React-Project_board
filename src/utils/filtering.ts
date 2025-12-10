@@ -39,10 +39,17 @@ function getDisplayValue(value: CellValue, field: FieldDefinition): string {
 }
 
 /**
- * Check if a value is empty (null, undefined, or empty string)
+ * Check if a value is empty (null, undefined, empty string, or empty array)
  */
 function isEmpty(value: CellValue): boolean {
-  return value === null || value === undefined || value === '';
+  if (value === null || value === undefined || value === '') {
+    return true;
+  }
+  // Check for empty arrays (e.g., multi-select fields with no selections)
+  if (Array.isArray(value) && value.length === 0) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -69,6 +76,21 @@ function matchesFilter(
     return !isEmpty(value);
   }
 
+  // For 'in' operator, check if empty values should be included
+  if (filter.operator === 'in') {
+    const filterValues: string[] = Array.isArray(filter.value)
+      ? filter.value.map((v) => String(v).toLowerCase())
+      : String(filter.value || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+    // Check if '(empty)' is in the filter values
+    const includeEmpty = filterValues.includes('(empty)') || filterValues.includes('empty');
+
+    // If value is empty and filter includes '(empty)', match
+    if (isEmpty(value) && includeEmpty) {
+      return true;
+    }
+  }
+
   // For other operators, if value is empty, no match
   if (isEmpty(value)) {
     return false;
@@ -87,6 +109,9 @@ function matchesFilter(
         ? filter.value.map((v) => String(v).toLowerCase())
         : String(filter.value || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
+      // Filter out '(empty)' and 'empty' from comparison values
+      const comparisonValues = filterValues.filter((v) => v !== '(empty)' && v !== 'empty');
+
       // Multi-select stored as array of IDs
       if (field.type === 'multi-select' && Array.isArray(value)) {
         // Map stored ids to labels if options exist, otherwise use ids
@@ -101,16 +126,16 @@ function matchesFilter(
           : [];
 
         // Match if any filter value matches any item in the row array
-        return filterValues.some((fv) => rowValuesLower.includes(fv));
+        return comparisonValues.some((fv) => rowValuesLower.includes(fv));
       }
 
       // For scalar values, match if either the display value (label) or the raw stored value (ID)
-      if (displayValue && filterValues.includes(displayValue)) {
+      if (displayValue && comparisonValues.includes(displayValue)) {
         return true;
       }
 
       // Fallback: compare raw value (IDs, numbers, etc.)
-      return filterValues.includes(String(value).toLowerCase());
+      return comparisonValues.includes(String(value).toLowerCase());
     }
 
     case 'equals':

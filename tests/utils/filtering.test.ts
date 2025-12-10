@@ -139,6 +139,181 @@ describe('filterRows', () => {
     });
   });
 
+  describe('In operator', () => {
+    const multiSelectField: FieldDefinition = {
+      id: 'fld_tags',
+      name: 'Tags',
+      type: 'multi-select',
+      visible: true,
+      options: [
+        { id: 'tag_frontend', label: 'Frontend' },
+        { id: 'tag_backend', label: 'Backend' },
+        { id: 'tag_bug', label: 'Bug' },
+      ],
+    };
+
+    const rowsWithMixedStatus: Row[] = [
+      { id: 'row_1', values: { fld_status: 'opt_todo', fld_title: 'Task 1' } },
+      { id: 'row_2', values: { fld_status: 'opt_progress', fld_title: 'Task 2' } },
+      { id: 'row_3', values: { fld_status: 'opt_done', fld_title: 'Task 3' } },
+      { id: 'row_4', values: { fld_status: null, fld_title: 'Task 4' } },
+      { id: 'row_5', values: { fld_title: 'Task 5' } }, // undefined status
+    ];
+
+    const rowsWithTags: Row[] = [
+      { id: 'row_1', values: { fld_tags: ['tag_frontend'], fld_title: 'Task 1' } },
+      { id: 'row_2', values: { fld_tags: ['tag_backend'], fld_title: 'Task 2' } },
+      { id: 'row_3', values: { fld_tags: ['tag_frontend', 'tag_bug'], fld_title: 'Task 3' } },
+      { id: 'row_4', values: { fld_tags: [], fld_title: 'Task 4' } }, // empty array
+      { id: 'row_5', values: { fld_tags: null, fld_title: 'Task 5' } }, // null
+      { id: 'row_6', values: { fld_title: 'Task 6' } }, // undefined
+    ];
+
+    it('filters rows matching any value in the list', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'Todo,In Progress' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1');
+      expect(filtered.map((r) => r.id)).toContain('row_2');
+    });
+
+    it('filters using option IDs', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'opt_todo,opt_done' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1');
+      expect(filtered.map((r) => r.id)).toContain('row_3');
+    });
+
+    it('filters using array of values', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: ['opt_todo', 'opt_progress'] },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1');
+      expect(filtered.map((r) => r.id)).toContain('row_2');
+    });
+
+    it('includes empty values when (empty) is in the filter list', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'opt_todo,opt_progress,(empty)' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(4);
+      expect(filtered.map((r) => r.id)).toContain('row_1'); // opt_todo
+      expect(filtered.map((r) => r.id)).toContain('row_2'); // opt_progress
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_5'); // undefined
+    });
+
+    it('includes empty values when empty keyword is used', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'Todo,empty' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(3);
+      expect(filtered.map((r) => r.id)).toContain('row_1'); // opt_todo
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_5'); // undefined
+    });
+
+    it('returns only empty values when only (empty) is specified', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: '(empty)' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_5'); // undefined
+    });
+
+    it('is case-insensitive for option labels', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'todo,IN PROGRESS' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1');
+      expect(filtered.map((r) => r.id)).toContain('row_2');
+    });
+
+    it('does not match empty values if (empty) is not specified', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'in', value: 'opt_todo,opt_progress' },
+      ];
+
+      const filtered = filterRows(rowsWithMixedStatus, filters, [selectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1');
+      expect(filtered.map((r) => r.id)).toContain('row_2');
+      expect(filtered.map((r) => r.id)).not.toContain('row_4'); // null excluded
+      expect(filtered.map((r) => r.id)).not.toContain('row_5'); // undefined excluded
+    });
+
+    it('filters multi-select field with matching labels', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'in', value: 'Frontend,Bug' },
+      ];
+
+      const filtered = filterRows(rowsWithTags, filters, [multiSelectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1'); // Frontend
+      expect(filtered.map((r) => r.id)).toContain('row_3'); // Frontend, Bug
+    });
+
+    it('includes empty arrays when (empty) is specified for multi-select', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'in', value: 'Frontend,(empty)' },
+      ];
+
+      const filtered = filterRows(rowsWithTags, filters, [multiSelectField, textField]);
+      expect(filtered).toHaveLength(5);
+      expect(filtered.map((r) => r.id)).toContain('row_1'); // Frontend
+      expect(filtered.map((r) => r.id)).toContain('row_3'); // Frontend, Bug
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // empty array
+      expect(filtered.map((r) => r.id)).toContain('row_5'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_6'); // undefined
+    });
+
+    it('includes all types of empty values for multi-select with empty keyword', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'in', value: 'empty' },
+      ];
+
+      const filtered = filterRows(rowsWithTags, filters, [multiSelectField, textField]);
+      expect(filtered).toHaveLength(3);
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // empty array
+      expect(filtered.map((r) => r.id)).toContain('row_5'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_6'); // undefined
+    });
+
+    it('does not include empty arrays when empty not specified for multi-select', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'in', value: 'Frontend' },
+      ];
+
+      const filtered = filterRows(rowsWithTags, filters, [multiSelectField, textField]);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_1'); // Frontend
+      expect(filtered.map((r) => r.id)).toContain('row_3'); // Frontend, Bug
+      expect(filtered.map((r) => r.id)).not.toContain('row_4'); // empty array excluded
+      expect(filtered.map((r) => r.id)).not.toContain('row_5'); // null excluded
+      expect(filtered.map((r) => r.id)).not.toContain('row_6'); // undefined excluded
+    });
+  });
+
   describe('Is-empty operator', () => {
     const rowsWithEmpty: Row[] = [
       { id: 'row_1', values: { fld_title: 'Has title', fld_points: 3 } },
@@ -146,6 +321,23 @@ describe('filterRows', () => {
       { id: 'row_3', values: { fld_title: '', fld_points: 0 } },
       { id: 'row_4', values: { fld_points: 2 } }, // undefined
     ];
+
+    const rowsWithEmptyArrays: Row[] = [
+      { id: 'row_1', values: { fld_tags: ['tag_frontend'], fld_title: 'Task 1' } },
+      { id: 'row_2', values: { fld_tags: [], fld_title: 'Task 2' } }, // empty array
+      { id: 'row_3', values: { fld_tags: null, fld_title: 'Task 3' } }, // null
+      { id: 'row_4', values: { fld_title: 'Task 4' } }, // undefined
+    ];
+
+    const multiSelectField: FieldDefinition = {
+      id: 'fld_tags',
+      name: 'Tags',
+      type: 'multi-select',
+      visible: true,
+      options: [
+        { id: 'tag_frontend', label: 'Frontend' },
+      ],
+    };
 
     it('filters empty values', () => {
       const filters: FilterConfig[] = [
@@ -157,6 +349,18 @@ describe('filterRows', () => {
       expect(filtered.map((r) => r.id)).toContain('row_2');
       expect(filtered.map((r) => r.id)).toContain('row_3');
       expect(filtered.map((r) => r.id)).toContain('row_4');
+    });
+
+    it('filters empty arrays for multi-select fields', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_tags', operator: 'is-empty' },
+      ];
+
+      const filtered = filterRows(rowsWithEmptyArrays, filters, [multiSelectField, textField]);
+      expect(filtered).toHaveLength(3);
+      expect(filtered.map((r) => r.id)).toContain('row_2'); // empty array
+      expect(filtered.map((r) => r.id)).toContain('row_3'); // null
+      expect(filtered.map((r) => r.id)).toContain('row_4'); // undefined
     });
   });
 
