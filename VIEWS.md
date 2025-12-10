@@ -13,7 +13,7 @@ A **View** is a saved configuration that includes:
 - **Columns**: Array of visible field IDs in a specific order
 - **Filters**: Array of filter conditions to apply
 - **Sort Configuration**: Optional sorting by a specific field and direction
-- **Group By**: Field to group by (future feature, currently not implemented)
+- **Group By**: Field to group by (see [GROUPING.md](./GROUPING.md) for details)
 
 ### View Lifecycle
 
@@ -33,7 +33,7 @@ interface ViewConfig {
   columns: string[];              // Visible field IDs in order (e.g., ["fld_title", "fld_status"])
   sortBy: SortConfig | null;      // Sort configuration or null
   filters: FilterConfig[];        // Array of active filters
-  groupBy: string | null;         // Field ID to group by (not yet implemented)
+  groupBy: string | null;         // Field ID to group by (e.g., "fld_status"), null for no grouping
 }
 
 interface SortConfig {
@@ -757,8 +757,10 @@ When implementing views:
 3. **Auto-save**: Column order and visibility changes auto-save to current view
 4. **Manual Save**: Filter changes require explicit save via "Save" button
 5. **State Management**: Parent component should maintain views array and update it when callbacks fire
-6. **View Application**: Switching views applies filters, sorting, and column configuration
+6. **View Application**: Switching views applies filters, sorting, column configuration, and grouping
 7. **Unique IDs**: Use `generateRowId()` or similar for generating unique view IDs
 8. **Persistence**: Parent component is responsible for persisting views (localStorage, backend, etc.)
+9. **Grouping**: Each view can have its own `groupBy` configuration - see [GROUPING.md](./GROUPING.md) for complete grouping documentation
+10. **Sorting vs Grouping**: When `groupBy` is set, `sortBy` is automatically disabled to prevent conflicts
 
 The Views system provides a complete solution for managing multiple table configurations with minimal effort from the parent component.

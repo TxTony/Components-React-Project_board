@@ -12,6 +12,7 @@ export { GitBoardTable } from './components/GitBoardTable';
 // Export table components
 export { TableHeader } from './components/Table/TableHeader';
 export { TableBody } from './components/Table/TableBody';
+export { GroupedTableBody } from './components/Table/GroupedTableBody';
 export { Row as RowComponent } from './components/Table/Row';
 export { Cell } from './components/Table/Cell';
 
@@ -38,6 +39,7 @@ export {
   Button,
   Select,
   ToggleThemeButton,
+  LoadingIndicator,
 } from './components/Shared';
 
 // Export content panel components
@@ -52,6 +54,7 @@ export {
 export { FilterBar } from './components/Toolbar/FilterBar';
 export { Toolbar } from './components/Toolbar/Toolbar';
 export { ColumnVisibilityMenu } from './components/Toolbar/ColumnVisibilityMenu';
+export { GroupByMenu } from './components/Toolbar/GroupByMenu';
 
 // Export hooks
 export {
@@ -60,6 +63,8 @@ export {
   useKeyboardShortcuts,
   createTableShortcuts,
 } from './hooks';
+export { useInfiniteScroll } from './hooks/useInfiniteScroll';
+export type { UseInfiniteScrollOptions } from './hooks/useInfiniteScroll';
 
 // Export state stores
 export {
@@ -70,6 +75,8 @@ export {
 // Export utilities
 export { sortRows } from './utils/sorting';
 export { applyAllFilters } from './utils/filtering';
+export { groupRows, getUniqueFieldValues } from './utils/grouping';
+export type { RowGroup } from './utils/grouping';
 export { generateRowId, generateFieldId } from './utils/uid';
 export {
   parseMarkdown,

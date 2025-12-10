@@ -6,12 +6,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TableHeader } from './Table/TableHeader';
 import { TableBody } from './Table/TableBody';
+import { GroupedTableBody } from './Table/GroupedTableBody';
 import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
 import { ViewTabs } from './Toolbar/ViewTabs';
 import { RowDetailPanel } from './ContentPanel/RowDetailPanel';
 import { sortRows } from '../utils/sorting';
 import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
+import { groupRows } from '../utils/grouping';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
 import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent } from '@/types';
@@ -37,6 +39,10 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onCreateView,
   onUpdateView,
   onDeleteView,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+  loadingMessage,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -54,6 +60,9 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   );
   const [filters, setFilters] = useState<FilterConfig[]>(
     initialView?.filters || (currentView?.filters || [])
+  );
+  const [groupBy, setGroupBy] = useState<string | null>(
+    initialView?.groupBy || (currentView?.groupBy || null)
   );
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [lastSelectedRowId, setLastSelectedRowId] = useState<string | null>(null);
@@ -103,6 +112,9 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         if (savedState.filters) {
           setFilters(savedState.filters);
         }
+        if (savedState.groupBy !== undefined) {
+          setGroupBy(savedState.groupBy);
+        }
         if (savedState.fieldWidths) {
           setFieldWidths(savedState.fieldWidths);
         }
@@ -145,11 +157,12 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         fieldOrder,
         sortConfig,
         filters,
+        groupBy,
         fieldWidths,
         hiddenColumns: Array.from(hiddenColumns),
       });
     }
-  }, [tableId, fieldOrder, sortConfig, filters, fieldWidths, hiddenColumns]);
+  }, [tableId, fieldOrder, sortConfig, filters, groupBy, fieldWidths, hiddenColumns]);
 
   const handleCellEdit = (edit: { rowId: string; fieldId: string; value: CellValue }) => {
     const updatedRows = rows.map((row) => {
@@ -515,6 +528,9 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // Apply view's sort configuration
     setSortConfig(view.sortBy);
 
+    // Apply view's group by configuration
+    setGroupBy(view.groupBy);
+
     // Apply view's column visibility
     if (view.columns && view.columns.length > 0) {
       // Get all field IDs
@@ -604,11 +620,18 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     // First apply filters
     let filtered = applyAllFilters(rows, '', filters, orderedFields);
 
-    // Then apply sorting
-    filtered = sortRows(filtered, sortConfig, orderedFields);
+    // Then apply sorting (only if not grouping)
+    if (!groupBy) {
+      filtered = sortRows(filtered, sortConfig, orderedFields);
+    }
 
     return filtered;
-  }, [rows, filters, sortConfig, orderedFields]);
+  }, [rows, filters, sortConfig, orderedFields, groupBy]);
+
+  // Apply grouping to processed rows
+  const groupedRows = useMemo(() => {
+    return groupRows(processedRows, groupBy, orderedFields);
+  }, [processedRows, groupBy, orderedFields]);
 
   // Update processedRows ref for shift-click range selection
   useEffect(() => {
@@ -660,6 +683,9 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       <Toolbar
         selectedCount={selectedRows.size}
         onDeleteSelected={handleDeleteSelected}
+        fields={orderedFields}
+        currentGroupBy={groupBy}
+        onGroupByChange={setGroupBy}
       />
       {filters.length > 0 ? (
         <div className="gitboard-table__stats">
@@ -670,29 +696,55 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         <table className="gitboard-table__table">
           <TableHeader
             fields={orderedFields}
-            sortConfig={sortConfig}
-            onSort={handleSort}
+            sortConfig={groupBy ? null : sortConfig}
+            onSort={groupBy ? undefined : handleSort}
             onReorder={handleFieldReorder}
             onResize={handleFieldResize}
             showSelection
             allSelected={allSelected}
             onSelectAll={handleSelectAll}
           />
-          <TableBody
-            fields={orderedFields}
-            rows={processedRows}
-            onEdit={handleCellEdit}
-            showSelection
-            selectedRows={selectedRows}
-            onSelectRow={handleSelectRow}
-            selectedCell={selectedCell}
-            onSelectCell={handleCellSelect}
-            onAddItem={handleAddItem}
-            onBulkUpdate={handleBulkUpdate}
-            onRowReorder={handleRowReorder}
-            onTitleClick={handleTitleClick}
-            onRowNumberDoubleClick={handleTitleClick}
-          />
+          {groupBy ? (
+            <GroupedTableBody
+              fields={orderedFields}
+              groups={groupedRows}
+              onEdit={handleCellEdit}
+              showSelection
+              selectedRows={selectedRows}
+              onSelectRow={handleSelectRow}
+              selectedCell={selectedCell}
+              onSelectCell={handleCellSelect}
+              onAddItem={handleAddItem}
+              onBulkUpdate={handleBulkUpdate}
+              onRowReorder={handleRowReorder}
+              onTitleClick={handleTitleClick}
+              onRowNumberDoubleClick={handleTitleClick}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
+              onLoadMore={onLoadMore}
+              loadingMessage={loadingMessage}
+            />
+          ) : (
+            <TableBody
+              fields={orderedFields}
+              rows={processedRows}
+              onEdit={handleCellEdit}
+              showSelection
+              selectedRows={selectedRows}
+              onSelectRow={handleSelectRow}
+              selectedCell={selectedCell}
+              onSelectCell={handleCellSelect}
+              onAddItem={handleAddItem}
+              onBulkUpdate={handleBulkUpdate}
+              onRowReorder={handleRowReorder}
+              onTitleClick={handleTitleClick}
+              onRowNumberDoubleClick={handleTitleClick}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
+              onLoadMore={onLoadMore}
+              loadingMessage={loadingMessage}
+            />
+          )}
         </table>
       </div>
 

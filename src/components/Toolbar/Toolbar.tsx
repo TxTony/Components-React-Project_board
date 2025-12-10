@@ -4,15 +4,23 @@
  */
 
 import React from 'react';
+import { GroupByMenu } from './GroupByMenu';
+import type { FieldDefinition } from '@/types';
 
 export interface ToolbarProps {
   selectedCount: number;
   onDeleteSelected?: () => void;
+  fields?: FieldDefinition[];
+  currentGroupBy?: string | null;
+  onGroupByChange?: (fieldId: string | null) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   selectedCount,
   onDeleteSelected,
+  fields = [],
+  currentGroupBy = null,
+  onGroupByChange,
 }) => {
   return (
     <div className="gitboard-table__toolbar">
@@ -36,6 +44,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             )}
           </>
         ) : null}
+      </div>
+
+      <div className="gitboard-table__toolbar-right">
+        {fields.length > 0 && onGroupByChange && (
+          <GroupByMenu
+            fields={fields}
+            currentGroupBy={currentGroupBy}
+            onGroupByChange={onGroupByChange}
+          />
+        )}
       </div>
     </div>
   );

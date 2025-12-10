@@ -9,6 +9,7 @@ export interface TableState {
   fieldOrder?: string[];
   sortConfig?: SortConfig | null;
   filters?: FilterConfig[];
+  groupBy?: string | null;
   columnWidths?: Record<string, number>;
   fieldWidths?: Record<string, number>;
   hiddenColumns?: string[];

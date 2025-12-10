@@ -259,6 +259,17 @@ function App() {
 - **Multi-type support** - Smart sorting for text, numbers, dates, and selects
 - **Persistent state** - Sort preferences saved to localStorage
 
+### 📁 Grouping
+
+- **Group by field** - Organize rows into collapsible groups by any field (Status, Assignee, Priority, etc.)
+- **Collapsible groups** - Each group can be expanded/collapsed independently
+- **Group headers** - Display group value and row count
+- **View-specific** - Each view can have its own grouping configuration
+- **Empty handling** - Rows with empty values grouped as "No [FieldName]"
+- **Smart sorting** - Groups sorted alphabetically with empty group last
+- **Supported fields** - single-select, multi-select, text, title, assignee, iteration
+- **See [GROUPING.md](./GROUPING.md) for complete documentation**
+
 ### 🔄 Column Management
 
 - **Drag to reorder** - Rearrange columns by dragging headers
@@ -991,6 +1002,44 @@ import type {
 // Styles
 import '@txtony/gitboard-table/styles.css';
 ```
+
+## 📚 Documentation
+
+Comprehensive documentation is available for all major features:
+
+- **[GROUPING.md](./GROUPING.md)** - Complete guide to grouping rows by field values
+  - How grouping integrates with views
+  - Supported field types
+  - Grouping utilities and components
+  - Performance considerations
+  - Examples and troubleshooting
+
+- **[VIEWS.md](./VIEWS.md)** - Views system documentation
+  - Creating and managing multiple table configurations
+  - View lifecycle and state management
+  - Event callbacks and persistence
+  - Examples and common patterns
+
+- **[FILTERS.md](./FILTERS.md)** - Advanced filtering system
+  - Filter operators and syntax
+  - Creating complex filter combinations
+  - Programmatic filtering
+
+- **[FIRESTORE_INTEGRATION.md](./FIRESTORE_INTEGRATION.md)** - Firebase/Firestore integration
+  - Complete examples with infinite scroll
+  - Batched data loading (200 items)
+  - Real-time updates
+  - Performance optimization
+
+- **[EVENTS.md](./EVENTS.md)** - Event system reference
+  - All available callbacks
+  - Event payload structures
+  - Usage examples
+
+- **[ROWS.md](./ROWS.md)** - Row management documentation
+  - CRUD operations
+  - Row reordering
+  - Row selection
 
 ## 🤝 Contributing
 

@@ -1074,3 +1074,246 @@
   transition: box-shadow 0.2s ease-in-out;
 }
 
+/* Group By Styles */
+.gitboard-table__group-by-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.gitboard-table__button--active {
+  background-color: var(--gb-accent-muted);
+  color: var(--gb-accent-emphasis);
+  border-color: var(--gb-accent-emphasis);
+}
+
+.gitboard-table__button--active:hover {
+  background-color: var(--gb-accent-subtle);
+}
+
+.gitboard-table__dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: var(--gb-bg-default);
+  border: 1px solid var(--gb-border);
+  border-radius: var(--gb-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  padding: var(--gb-spacing-xs) 0;
+}
+
+.gitboard-table__dropdown-item {
+  @apply flex items-center justify-between w-full px-3 py-2 text-left text-sm;
+  background-color: transparent;
+  color: var(--gb-text-primary);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.gitboard-table__dropdown-item:hover {
+  background-color: var(--gb-bg-muted);
+}
+
+.gitboard-table__dropdown-item--active {
+  background-color: var(--gb-bg-subtle);
+  font-weight: 600;
+}
+
+.gitboard-table__dropdown-divider {
+  height: 1px;
+  background-color: var(--gb-border-muted);
+  margin: var(--gb-spacing-xs) 0;
+}
+
+.gitboard-table__dropdown-empty {
+  @apply px-3 py-2 text-sm text-center;
+  color: var(--gb-text-tertiary);
+}
+
+/* Toolbar Layout */
+.gitboard-table__toolbar {
+  @apply flex items-center justify-between px-3 py-2 border-b;
+  background-color: var(--gb-bg-default);
+  border-color: var(--gb-border);
+  min-height: 44px;
+}
+
+.gitboard-table__toolbar-left {
+  @apply flex items-center gap-2;
+}
+
+.gitboard-table__toolbar-right {
+  @apply flex items-center gap-2;
+}
+
+/* Group Header Styles */
+.gitboard-table__group-header {
+  background-color: var(--gb-bg-default);
+}
+
+.gitboard-table__group-header:hover .gitboard-table__group-header-cell {
+  background-color: var(--gb-bg-muted);
+}
+
+.gitboard-table__group-header-cell {
+  @apply px-4 py-3;
+  background-color: var(--gb-bg-default);
+  border: none;
+  border-left: 1px solid var(--gb-border);
+  border-right: 1px solid var(--gb-border);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.gitboard-table__group-header-content {
+  @apply flex items-center justify-between;
+}
+
+.gitboard-table__group-header-left {
+  @apply flex items-center gap-3;
+}
+
+.gitboard-table__group-header-right {
+  @apply flex items-center gap-2;
+}
+
+/* Group Toggle Button */
+.gitboard-table__group-toggle {
+  @apply flex items-center justify-center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--gb-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.gitboard-table__group-toggle:hover {
+  background-color: var(--gb-bg-subtle);
+  color: var(--gb-text-primary);
+}
+
+.gitboard-table__group-toggle:focus {
+  outline: 2px solid var(--gb-accent-emphasis);
+  outline-offset: 2px;
+}
+
+.gitboard-table__group-toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+/* Group Label and Count */
+.gitboard-table__group-label {
+  @apply font-semibold;
+  margin: 0;
+  color: var(--gb-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.gitboard-table__group-count {
+  @apply inline-flex items-center justify-center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  background-color: var(--gb-bg-subtle);
+  color: var(--gb-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* Group Rows - Contained within card */
+.gitboard-table__tbody--grouped .gitboard-table__tr {
+  background-color: var(--gb-bg-default);
+}
+
+.gitboard-table__tbody--grouped .gitboard-table__tr:hover {
+  background-color: var(--gb-bg-muted);
+}
+
+.gitboard-table__tbody--grouped .gitboard-table__tr td {
+  border-left: 1px solid var(--gb-border);
+  border-right: 1px solid var(--gb-border);
+  border-bottom: 1px solid var(--gb-border-muted);
+}
+
+.gitboard-table__tbody--grouped .gitboard-table__tr:last-of-type td {
+  border-bottom: none;
+}
+
+/* Infinite Scroll Loading Styles */
+.gitboard-table__loading-indicator {
+  @apply flex items-center justify-center gap-2 py-8;
+}
+
+.gitboard-table__loading-indicator--inline {
+  @apply py-3;
+}
+
+.gitboard-table__spinner {
+  animation: gitboard-spin 1s linear infinite;
+}
+
+.gitboard-table__spinner-track {
+  opacity: 0.25;
+}
+
+.gitboard-table__spinner-path {
+  opacity: 0.75;
+}
+
+@keyframes gitboard-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gitboard-table__loading-message {
+  @apply text-sm;
+  color: var(--gb-text-secondary);
+}
+
+.gitboard-table__loading-row {
+  background-color: var(--gb-bg-default);
+}
+
+.gitboard-table__loading-row:hover {
+  background-color: var(--gb-bg-default);
+}
+
+.gitboard-table__loading-cell {
+  @apply text-center py-4;
+  border-bottom: 1px solid var(--gb-border-muted);
+}
+
+.gitboard-table__scroll-trigger {
+  height: 1px;
+  visibility: hidden;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
