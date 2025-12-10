@@ -1,6 +1,6 @@
 {
   "name": "@txtony/gitboard-table",
-  "version": "0.1.7",
+  "version": "0.1.11",
   "description": "A reusable GitHub-Projects-style table component, built with React + TypeScript, TailwindCSS, and theme support",
   "type": "module",
   "main": "./dist/index.cjs.js",
@@ -83,5 +83,13 @@
     "editable-table"
   ],
   "author": "TxTony",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TxTony/Components-React-Project_board.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TxTony/Components-React-Project_board/issues"
+  },
+  "homepage": "https://github.com/TxTony/Components-React-Project_board#readme"
 }
