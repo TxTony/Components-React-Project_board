@@ -112,7 +112,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
       data-testid="panel-overlay"
     >
       <div
-        className="gitboard-row-detail-panel h-full w-full md:w-2/3 lg:w-1/2 xl:w-2/5 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col animate-slide-in"
+        className="gitboard-row-detail-panel h-full w-full md:w-[90%] bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col animate-slide-in"
         role="complementary"
         aria-label="Row details panel"
         aria-modal="true"
@@ -151,14 +151,17 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6 space-y-6">
-          <UnifiedDescriptionEditor
-            value={content.description}
-            onChange={handleDescriptionChange}
-          />
-          
-          {/* Column Values Section */}
-          <div className="gitboard-row-detail-panel__columns border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-6">
+          {/* Left Column - Description Editor */}
+          <div className="gitboard-row-detail-panel__left pr-6 border-r border-gray-200 dark:border-gray-700">
+            <UnifiedDescriptionEditor
+              value={content.description}
+              onChange={handleDescriptionChange}
+            />
+          </div>
+
+          {/* Right Column - Column Values */}
+          <div className="gitboard-row-detail-panel__right pl-6">
             <ColumnValuesList
               row={row}
               fields={fields}
