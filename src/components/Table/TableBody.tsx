@@ -6,6 +6,8 @@
 import React, { useState, useRef } from 'react';
 import { Row } from './Row';
 import { AddItemRow } from './AddItemRow';
+import { LoadingIndicator } from '../Shared/LoadingIndicator';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import type { FieldDefinition, Row as RowType, CellValue, BulkUpdateEvent } from '@/types';
 
 export interface TableBodyProps {
@@ -22,6 +24,12 @@ export interface TableBodyProps {
   onRowReorder?: (fromIndex: number, toIndex: number) => void;
   onTitleClick?: (rowId: string) => void;
   onRowNumberDoubleClick?: (rowId: string) => void;
+
+  // Infinite scroll props
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  loadingMessage?: string;
 }
 
 export const TableBody: React.FC<TableBodyProps> = ({
@@ -38,6 +46,10 @@ export const TableBody: React.FC<TableBodyProps> = ({
   onRowReorder,
   onTitleClick,
   onRowNumberDoubleClick,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+  loadingMessage,
 }) => {
   const [dragFillSource, setDragFillSource] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [dragFillTargets, setDragFillTargets] = useState<Set<string>>(new Set());
@@ -177,6 +189,17 @@ export const TableBody: React.FC<TableBodyProps> = ({
     setDragOverRowIndex(null);
   };
 
+  // Infinite scroll setup
+  const triggerRef = useInfiniteScroll({
+    onLoadMore: onLoadMore || (() => {}),
+    hasMore,
+    isLoading: isLoadingMore,
+    threshold: 200,
+  });
+
+  // Calculate column count for loading indicator
+  const columnCount = fields.filter((f) => f.visible).length + (showSelection ? 1 : 0) + 1; // +1 for row number
+
   return (
     <tbody className="gitboard-table__tbody">
       {rows.map((row, index) => (
@@ -209,6 +232,26 @@ export const TableBody: React.FC<TableBodyProps> = ({
         showSelection={showSelection}
         onAddItem={onAddItem}
       />
+
+      {/* Infinite scroll loading indicator */}
+      {isLoadingMore && (
+        <tr className="gitboard-table__loading-row">
+          <td colSpan={columnCount} className="gitboard-table__loading-cell">
+            <LoadingIndicator
+              size="small"
+              message={loadingMessage || 'Loading more items...'}
+              inline
+            />
+          </td>
+        </tr>
+      )}
+
+      {/* Infinite scroll trigger (invisible element to detect when user scrolls near bottom) */}
+      {hasMore && onLoadMore && !isLoadingMore && (
+        <tr ref={triggerRef as any} className="gitboard-table__scroll-trigger">
+          <td colSpan={columnCount} style={{ height: '1px', padding: 0 }} />
+        </tr>
+      )}
     </tbody>
   );
 };

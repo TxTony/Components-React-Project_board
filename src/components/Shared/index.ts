@@ -7,8 +7,10 @@ export { Badge } from './Badge';
 export { Button } from './Button';
 export { Select } from './Select';
 export { ToggleThemeButton } from './ToggleThemeButton';
+export { LoadingIndicator } from './LoadingIndicator';
 
 export type { BadgeProps } from './Badge';
 export type { ButtonProps } from './Button';
 export type { SelectProps, SelectOption } from './Select';
 export type { ToggleThemeButtonProps } from './ToggleThemeButton';
+export type { LoadingIndicatorProps } from './LoadingIndicator';
