@@ -13,7 +13,7 @@ export interface RowProps {
   onEdit?: (edit: { rowId: string; fieldId: string; value: CellValue }) => void;
   showSelection?: boolean;
   isSelected?: boolean;
-  onSelect?: (rowId: string, selected: boolean, ctrlKey?: boolean) => void;
+  onSelect?: (rowId: string, selected: boolean, ctrlKey?: boolean, shiftKey?: boolean) => void;
   selectedCell?: { rowId: string; fieldId: string } | null;
   onSelectCell?: (rowId: string, fieldId: string) => void;
   onDragFillStart?: (rowId: string, fieldId: string) => void;
@@ -113,20 +113,26 @@ export const Row: React.FC<RowProps> = ({
         className={`gitboard-table__cell gitboard-table__cell--row-number ${isSelected ? 'gitboard-table__cell--selected' : ''}`}
         onClick={(e) => {
           const isCtrlClick = e.ctrlKey || e.metaKey;
+          const isShiftClick = e.shiftKey;
+
+          // Support Shift+Click for range selection
+          if (isShiftClick) {
+            onSelect?.(row.id, true, false, true);
+          }
           // Support Ctrl+Click for multi-selection
-          if (isCtrlClick) {
+          else if (isCtrlClick) {
             // Multi-select: toggle this row
-            onSelect?.(row.id, !isSelected, true);
+            onSelect?.(row.id, !isSelected, true, false);
           } else {
             // Single select: this is handled in GitBoardTable to clear others
-            onSelect?.(row.id, true, false);
+            onSelect?.(row.id, true, false, false);
           }
         }}
         onDoubleClick={() => {
           onRowNumberDoubleClick?.(row.id);
         }}
         style={{ cursor: 'pointer' }}
-        title={isSelected ? 'Click to deselect • Ctrl+Click to multi-select • Double-click to open details' : 'Click to select • Ctrl+Click to multi-select • Double-click to open details'}
+        title={isSelected ? 'Click to deselect • Ctrl+Click to multi-select • Shift+Click for range • Double-click to open details' : 'Click to select • Ctrl+Click to multi-select • Shift+Click for range • Double-click to open details'}
       >
         <div className="gitboard-table__row-number">
           {rowIndex !== undefined ? rowIndex + 1 : ''}

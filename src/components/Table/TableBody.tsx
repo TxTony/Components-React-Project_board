@@ -14,7 +14,7 @@ export interface TableBodyProps {
   onEdit?: (edit: { rowId: string; fieldId: string; value: CellValue }) => void;
   showSelection?: boolean;
   selectedRows?: Set<string>;
-  onSelectRow?: (rowId: string, selected: boolean) => void;
+  onSelectRow?: (rowId: string, selected: boolean, ctrlKey?: boolean, shiftKey?: boolean) => void;
   selectedCell?: { rowId: string; fieldId: string } | null;
   onSelectCell?: (rowId: string, fieldId: string) => void;
   onAddItem?: (title: string) => void;

@@ -14,7 +14,7 @@ import { sortRows } from '../utils/sorting';
 import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -26,6 +26,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onFieldChange: _onFieldChange,
   onBulkUpdate,
   onRowsReorder,
+  onRowSelect,
   onContentUpdate,
   contentResolver: _contentResolver,
   users: _users = [],
@@ -55,6 +56,8 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     initialView?.filters || (currentView?.filters || [])
   );
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [lastSelectedRowId, setLastSelectedRowId] = useState<string | null>(null);
+  const [lastSelectionAction, setLastSelectionAction] = useState<'select' | 'deselect' | 'range' | 'multi' | 'clear'>('select');
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; fieldId: string } | null>(null);
   const [fieldOrder, setFieldOrder] = useState<string[]>(fields.map((f) => f.id));
   const [fieldWidths, setFieldWidths] = useState<Record<string, number>>({});
@@ -66,6 +69,8 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   
   // Ref to track previous initialRows to avoid unnecessary updates
   const prevInitialRowsRef = useRef<Row[]>();
+  // Ref to track processedRows for shift-click range selection
+  const processedRowsRef = useRef<Row[]>([]);
 
   // Update internal state when props change
   useEffect(() => {
@@ -215,32 +220,67 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     });
   };
 
-  const handleSelectRow = (rowId: string, selected: boolean, ctrlKey = false) => {
+  const handleSelectRow = (rowId: string, selected: boolean, ctrlKey = false, shiftKey = false) => {
+    let actionType: 'select' | 'deselect' | 'range' | 'multi' | 'clear' = 'select';
+
     setSelectedRows((prev) => {
       const newSet = new Set(prev);
 
       if (selected) {
-        if (ctrlKey) {
+        if (shiftKey && lastSelectedRowId) {
+          // Shift+Click: Range selection
+          actionType = 'range';
+          // Find indices of last selected row and current row in processedRows
+          const currentProcessedRows = processedRowsRef.current;
+          const lastIndex = currentProcessedRows.findIndex(r => r.id === lastSelectedRowId);
+          const currentIndex = currentProcessedRows.findIndex(r => r.id === rowId);
+
+          if (lastIndex !== -1 && currentIndex !== -1) {
+            // Select all rows between last and current (inclusive)
+            const startIndex = Math.min(lastIndex, currentIndex);
+            const endIndex = Math.max(lastIndex, currentIndex);
+
+            for (let i = startIndex; i <= endIndex; i++) {
+              const row = currentProcessedRows[i];
+              if (row) {
+                newSet.add(row.id);
+              }
+            }
+          }
+        } else if (ctrlKey) {
           // Ctrl+Click: Add to existing selection (multi-select)
+          actionType = 'multi';
           newSet.add(rowId);
         } else {
           // Regular click: Single selection
           // If clicking the only selected row, deselect it
           if (newSet.size === 1 && newSet.has(rowId)) {
+            actionType = 'deselect';
             newSet.delete(rowId);
           } else {
             // Clear all and select only this row
+            actionType = 'select';
             newSet.clear();
             newSet.add(rowId);
           }
         }
       } else {
         // Deselecting (from Ctrl+Click toggle on already selected row)
+        actionType = 'deselect';
         newSet.delete(rowId);
       }
 
       return newSet;
     });
+
+    // Update last selection action
+    setLastSelectionAction(actionType);
+
+    // Update last selected row (for shift-click range selection)
+    // Only update if it's not a shift-click (to maintain anchor point)
+    if (!shiftKey) {
+      setLastSelectedRowId(rowId);
+    }
   };
 
   const handleCellSelect = (rowId: string, fieldId: string) => {
@@ -318,8 +358,10 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
       setSelectedRows(new Set(processedRows.map((r) => r.id)));
+      setLastSelectionAction('multi');
     } else {
       setSelectedRows(new Set());
+      setLastSelectionAction('clear');
     }
   };
 
@@ -567,6 +609,27 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
 
     return filtered;
   }, [rows, filters, sortConfig, orderedFields]);
+
+  // Update processedRows ref for shift-click range selection
+  useEffect(() => {
+    processedRowsRef.current = processedRows;
+  }, [processedRows]);
+
+  // Dispatch row selection event when selection changes
+  useEffect(() => {
+    if (onRowSelect) {
+      const selectedRowIds = Array.from(selectedRows);
+      const selectedRowObjects = rows.filter(row => selectedRows.has(row.id));
+
+      const selectionEvent: RowSelectionEvent = {
+        selectedRowIds,
+        selectedRows: selectedRowObjects,
+        lastAction: lastSelectionAction,
+      };
+
+      onRowSelect(selectionEvent);
+    }
+  }, [selectedRows, lastSelectionAction, rows, onRowSelect]);
 
   const allSelected = processedRows.length > 0 && processedRows.every((r) => selectedRows.has(r.id));
 

@@ -180,6 +180,7 @@ export interface GitBoardTableProps {
   onFieldChange?: (fields: FieldDefinition[]) => void;
   onBulkUpdate?: (event: BulkUpdateEvent) => void;
   onRowsReorder?: (event: RowReorderEvent) => void;  // Called when rows are reordered
+  onRowSelect?: (event: RowSelectionEvent) => void;  // Called when row selection changes
   onContentUpdate?: (rowId: UID, content: RowContent) => void;  // Called when row content is updated
   contentResolver?: (id: UID) => Promise<ContentItem>;
   users?: User[];
@@ -255,4 +256,13 @@ export interface RowReorderEvent {
   toIndex: number;        // New position of the moved row
   rows: Row[];            // Complete rows array in new order
   movedRow: Row;          // The row that was moved
+}
+
+/**
+ * Row selection event
+ */
+export interface RowSelectionEvent {
+  selectedRowIds: UID[];    // Array of selected row IDs
+  selectedRows: Row[];      // Array of selected row objects
+  lastAction: 'select' | 'deselect' | 'range' | 'multi' | 'clear';  // Type of action performed
 }

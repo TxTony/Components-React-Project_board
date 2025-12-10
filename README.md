@@ -129,6 +129,8 @@ module.exports = {
   - `Enter` to commit changes
   - `Escape` to cancel
   - Arrow keys for navigation
+  - `Ctrl+Click` / `Cmd+Click` for multi-select
+  - `Shift+Click` for range selection
 - **Visual feedback** - Blue ring on selected cells
 
 ### 🎯 Cell Selection & Bulk Operations
@@ -269,10 +271,49 @@ function App() {
 
 ### ✅ Row Selection
 
-- **Checkbox selection** - Select individual or all rows
-- **Bulk operations** - Delete multiple rows at once
-- **Visual feedback** - Selected rows highlighted
+- **Single selection** - Click row number to select a single row
+- **Multi-select** - Hold `Ctrl` (or `Cmd` on Mac) and click to add rows to selection
+- **Range selection** - Hold `Shift` and click to select all rows between anchor and target
+- **Checkbox selection** - Select individual or all rows via checkboxes
+- **Keyboard shortcuts**:
+  - Click - Select single row
+  - `Ctrl+Click` / `Cmd+Click` - Multi-select (add to selection)
+  - `Shift+Click` - Range select (select all rows between)
+  - Double-click row number - Open row detail panel
+- **Visual feedback** - Selected rows highlighted with blue background
+- **Event emission** - `onRowSelect` callback provides selection details with full row data
 - **Toolbar actions** - Context-sensitive toolbar for selected rows
+
+**Example**:
+```typescript
+import { GitBoardTable } from '@txtony/gitboard-table';
+import type { RowSelectionEvent } from '@txtony/gitboard-table';
+
+function App() {
+  const handleRowSelect = (event: RowSelectionEvent) => {
+    console.log('Selected rows:', event.selectedRows.length);
+    console.log('Selection type:', event.lastAction); // 'select', 'multi', 'range', 'deselect', 'clear'
+
+    // Access full row data
+    event.selectedRows.forEach(row => {
+      console.log('Row:', row.id, row.values);
+    });
+
+    // Track analytics
+    if (event.lastAction === 'range') {
+      trackEvent('range_selection', { count: event.selectedRows.length });
+    }
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      onRowSelect={handleRowSelect}
+    />
+  );
+}
+```
 
 ### 📝 Add Rows
 
@@ -451,6 +492,9 @@ interface GitBoardTableProps {
   onRowOpen?: (row: Row) => void;             // Called when row is clicked
   onFieldChange?: (fields: FieldDefinition[]) => void;  // Called when fields change
   onBulkUpdate?: (event: BulkUpdateEvent) => void;      // Called on drag-fill
+  onRowsReorder?: (event: RowReorderEvent) => void;    // Called when rows are reordered
+  onRowSelect?: (event: RowSelectionEvent) => void;    // Called when row selection changes
+  onContentUpdate?: (rowId: UID, content: RowContent) => void;  // Called when row content updates
   contentResolver?: (id: UID) => Promise<ContentItem>;  // Async content loader
   users?: User[];                 // Available users for assignee field
   iterations?: Iteration[];       // Available iterations
@@ -459,6 +503,7 @@ interface GitBoardTableProps {
   onViewChange?: (view: ViewConfig) => void;   // Called when view is switched
   onCreateView?: (view: ViewConfig) => void;   // Called when new view is created
   onUpdateView?: (view: ViewConfig) => void;   // Called when view is updated
+  onDeleteView?: (viewId: string) => void;     // Called when view is deleted
 }
 ```
 
@@ -514,6 +559,16 @@ interface BulkUpdateTarget {
   rowId: string;
   fieldId: string;
   currentValue: CellValue;
+}
+```
+
+### RowSelectionEvent
+
+```typescript
+interface RowSelectionEvent {
+  selectedRowIds: string[];        // Array of selected row IDs
+  selectedRows: Row[];             // Full row objects with all data
+  lastAction: 'select' | 'deselect' | 'range' | 'multi' | 'clear';  // Type of selection action
 }
 ```
 
@@ -713,6 +768,78 @@ const handleUpdateView = (updatedView: ViewConfig) => {
 />
 ```
 
+### onRowSelect - Row Selection Changes
+
+✅ **NEW**: Called whenever row selection changes (single, multi-select, or range selection).
+
+```typescript
+onRowSelect?: (event: RowSelectionEvent) => void;
+```
+
+**Triggers on**:
+- Single click on row number (select one)
+- `Ctrl+Click` / `Cmd+Click` (add to selection)
+- `Shift+Click` (select range)
+- Clicking selected row again (deselect)
+- Select all checkbox
+
+**Example**:
+```typescript
+const handleRowSelect = (event: RowSelectionEvent) => {
+  console.log(`${event.selectedRows.length} rows selected`);
+  console.log('Selection type:', event.lastAction);
+
+  // Different actions for different selection types
+  switch (event.lastAction) {
+    case 'select':
+      console.log('Single selection');
+      break;
+    case 'multi':
+      console.log('Multi-select (Ctrl+Click or Select All)');
+      break;
+    case 'range':
+      console.log('Range selection (Shift+Click)');
+      break;
+    case 'deselect':
+      console.log('Row deselected');
+      break;
+    case 'clear':
+      console.log('All rows cleared');
+      break;
+  }
+
+  // Access full row data
+  event.selectedRows.forEach(row => {
+    console.log('Row ID:', row.id);
+    console.log('Title:', row.values.title);
+    console.log('Status:', row.values.status);
+  });
+
+  // Enable/disable bulk action buttons
+  setBulkActionsEnabled(event.selectedRows.length > 0);
+
+  // Track analytics
+  if (event.lastAction === 'range') {
+    trackEvent('range_selection_used', {
+      count: event.selectedRows.length
+    });
+  }
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  onRowSelect={handleRowSelect}
+/>
+```
+
+**Use Cases**:
+- Enable/disable bulk action buttons based on selection
+- Display selection count in toolbar
+- Track user selection patterns
+- Enable context menus for selected items
+- Sync selection state with external systems
+
 📖 **See [EVENTS.md](./EVENTS.md) for complete event documentation including:**
 - Detailed payload structures
 - When each event fires
@@ -852,7 +979,14 @@ The package exports both ESM and CJS formats:
 import { GitBoardTable } from '@txtony/gitboard-table';
 
 // Types
-import type { FieldDefinition, Row, CellValue } from '@txtony/gitboard-table';
+import type {
+  FieldDefinition,
+  Row,
+  CellValue,
+  RowSelectionEvent,
+  RowReorderEvent,
+  BulkUpdateEvent
+} from '@txtony/gitboard-table';
 
 // Styles
 import '@txtony/gitboard-table/styles.css';

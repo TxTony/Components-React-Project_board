@@ -109,6 +109,8 @@ export type {
   CellEditEvent,
   BulkUpdateEvent,
   BulkUpdateTarget,
+  RowReorderEvent,
+  RowSelectionEvent,
 } from './types';
 
 // Export mock data for testing/development
