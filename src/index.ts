@@ -42,10 +42,10 @@ export {
 
 // Export content panel components
 export {
-  ContentPanelRoot,
-  MarkdownEditor,
-  AttachmentsList,
-  AttachmentUploader,
+  RowDetailPanel,
+  UnifiedDescriptionEditor,
+  MermaidViewer,
+  ColumnValuesList,
 } from './components/ContentPanel';
 
 // Export toolbar components
