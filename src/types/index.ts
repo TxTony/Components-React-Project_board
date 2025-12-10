@@ -146,7 +146,7 @@ export interface SortConfig {
  */
 export interface FilterConfig {
   field: UID;
-  operator: 'contains' | 'equals' | 'not-equals' | 'is-empty' | 'is-not-empty' | 'gt' | 'gte' | 'lt' | 'lte';
+  operator: 'contains' | 'equals' | 'not-equals' | 'is-empty' | 'is-not-empty' | 'gt' | 'gte' | 'lt' | 'lte' | 'in';
   value?: any;
 }
 

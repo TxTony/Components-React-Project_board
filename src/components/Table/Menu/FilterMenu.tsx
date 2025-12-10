@@ -67,6 +67,7 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
   };
 
   const operators: Array<{ value: FilterConfig['operator']; label: string }> = [
+    { value: 'in', label: 'In (comma-separated)' },
     { value: 'contains', label: 'Contains' },
     { value: 'equals', label: 'Equals' },
     { value: 'not-equals', label: 'Not equals' },

@@ -50,6 +50,7 @@ type FilterOperator =
   | 'gte'             // Greater than or equal
   | 'lt'              // Less than
   | 'lte'             // Less than or equal
+  | 'in'              // Value is one of a list (comma-separated or array)
 ```
 
 ### Example Filter Configurations
@@ -118,6 +119,7 @@ type FilterOperator =
 |----------|-------------|---------|
 | `is-empty` | Field is null, undefined, or empty string | `assignee:is-empty` |
 | `is-not-empty` | Field has a value | `assignee:is-not-empty` |
+| `in` | Field is one of a list of values (comma-separated) | `status:in:Prod,Snapshot` |
 
 ---
 
@@ -371,7 +373,13 @@ const OPERATOR_MAP: Record<string, string> = {
   'is-empty': '==',      // Compare to null
   'is-not-empty': '!=',  // Compare to null
   'contains': 'array-contains', // For arrays, or use full-text search
+  'in': 'in', // Matches any value in a provided array (Firestore `in`)
 };
+
+// Note: For multi-select fields you may want `array-contains-any` instead
+// of `in` if matching against array contents. Example mappings:
+// - scalar field with several candidate values -> use `in`
+// - array field (multi-select) -> use `array-contains-any`
 ```
 
 ### Implementation Guidelines
@@ -725,6 +733,26 @@ describe('GitBoardFirestoreAdapter', () => {
     };
     const [path, op, val] = adapter.buildWhereClause(filter, statusField);
     expect(path).toBe('values.fld_status');
+
+    ### Example 2b: `in` operator (match any of several values)
+
+    **GitBoard Filter:**
+    ```typescript
+    {
+      field: "fld_status",
+      operator: "in",
+      value: ["opt_prod", "opt_snapshot"]
+    }
+    ```
+
+    **Firestore Query:**
+    ```typescript
+    const q = query(
+      collection(db, 'rows'),
+      where('values.fld_status', 'in', ['opt_prod', 'opt_snapshot'])
+    );
+    ```
+
     expect(op).toBe('==');
     expect(val).toBe('opt_todo');
   });

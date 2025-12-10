@@ -40,7 +40,8 @@ type FilterOperator =
   | 'gt'            // Greater than (numbers/dates)
   | 'gte'           // Greater than or equal
   | 'lt'            // Less than
-  | 'lte';          // Less than or equal
+  | 'lte'           // Less than or equal
+  | 'in';           // Value is one of a comma-separated list
 ```
 
 ## Filter Syntax
@@ -74,6 +75,7 @@ The system supports multiple aliases for operators to improve user experience:
 | `gte` | `>=` | `points:>=:5` |
 | `lt` | `<` | `points:<:10` |
 | `lte` | `<=` | `points:<=:10` |
+| `in` | `in` | `status:in:Prod,Snapshot` |
 
 ### Multiple Filters
 
@@ -84,6 +86,19 @@ status:equals:done title:contains:login
 ```
 
 This applies filters with AND logic (all conditions must match).
+
+### The `in` operator (OR within a field)
+
+Use `in` when you want a field to match any one of multiple values. Values are a comma-separated list. This provides an OR-like behavior restricted to a single field.
+
+Examples:
+
+```
+status:in:Prod,Snapshot
+status:in:opt_prod,opt_snapshot
+```
+
+These return rows where the `status` field equals `Prod` OR `Snapshot` (or the matching option IDs). For multi-select fields, `in` will match when any of the provided values appear in the array.
 
 ### Negative Filters
 

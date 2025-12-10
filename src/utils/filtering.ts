@@ -81,6 +81,38 @@ function matchesFilter(
     case 'contains':
       return displayValue.includes(filterValue);
 
+    case 'in': {
+      // filter.value expected to be an array or comma-separated list
+      const filterValues: string[] = Array.isArray(filter.value)
+        ? filter.value.map((v) => String(v).toLowerCase())
+        : String(filter.value || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+      // Multi-select stored as array of IDs
+      if (field.type === 'multi-select' && Array.isArray(value)) {
+        // Map stored ids to labels if options exist, otherwise use ids
+        const rowValuesLower: string[] = Array.isArray(value)
+          ? value.map((id) => {
+              if (field.options) {
+                const opt = field.options.find((o) => o.id === id);
+                return (opt?.label || String(id)).toLowerCase();
+              }
+              return String(id).toLowerCase();
+            })
+          : [];
+
+        // Match if any filter value matches any item in the row array
+        return filterValues.some((fv) => rowValuesLower.includes(fv));
+      }
+
+      // For scalar values, match if either the display value (label) or the raw stored value (ID)
+      if (displayValue && filterValues.includes(displayValue)) {
+        return true;
+      }
+
+      // Fallback: compare raw value (IDs, numbers, etc.)
+      return filterValues.includes(String(value).toLowerCase());
+    }
+
     case 'equals':
       // For select fields, compare IDs directly
       if (

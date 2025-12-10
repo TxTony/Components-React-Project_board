@@ -25,6 +25,7 @@ interface Suggestion {
 
 const OPERATORS = [
   { value: 'contains', label: 'contains', description: 'Text contains value' },
+  { value: 'in', label: 'in', description: 'Value is one of a comma-separated list' },
   { value: 'equals', label: 'equals', aliases: ['is', 'eq'], description: 'Exactly equals value' },
   { value: 'not-equals', label: 'not-equals', aliases: ['not', 'ne'], description: 'Does not equal value' },
   { value: 'is-empty', label: 'is-empty', aliases: ['empty'], description: 'Field is empty' },
@@ -73,7 +74,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       }
 
       // Quote value if it contains spaces
-      let value = String(filter.value || '');
+      let value = '';
+      if (filter.operator === 'in' && Array.isArray(filter.value)) {
+        // For 'in' operator, join multiple values with comma
+        value = filter.value.map((v: any) => String(v)).join(',');
+      } else {
+        value = String(filter.value || '');
+      }
 
       // For select fields, get the label from option ID
       if (field.options && field.type && ['single-select', 'multi-select', 'assignee', 'iteration'].includes(field.type)) {
@@ -160,6 +167,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       if (opLower === 'contains' || opLower === 'contain') {
         operator = 'contains';
+      } else if (opLower === 'in') {
+        operator = 'in';
       } else if (opLower === 'equals' || opLower === 'is' || opLower === 'eq') {
         operator = 'equals';
       } else if (opLower === 'not-equals' || opLower === 'not' || opLower === 'ne') {
@@ -178,16 +187,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         operator = 'lte';
       }
 
-      // Remove quotes from value
-      let value = valuePart.replace(/^"(.*)"$/, '$1');
+      // Remove surrounding quotes from value
+      let rawValue = valuePart.replace(/^"(.*)"$/, '$1');
 
-      // Handle empty operators
+      // Handle operators that need a value
       const needsValue = operator !== 'is-empty' && operator !== 'is-not-empty';
+
+      let finalValue: any = undefined;
+
+      if (needsValue) {
+        if (operator === 'in') {
+          // Split comma-separated values and trim
+          finalValue = rawValue.split(',').map((s) => s.trim()).filter(Boolean);
+        } else {
+          finalValue = rawValue;
+        }
+      }
 
       parsed.push({
         field: field.id,
         operator: isNegative ? 'not-equals' : operator,
-        value: needsValue ? value : undefined,
+        value: finalValue,
       });
     }
 
