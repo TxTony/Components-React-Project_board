@@ -1166,6 +1166,11 @@
   background-color: var(--gb-bg-default);
 }
 
+/* Add spacing between groups */
+.gitboard-table__group-header:not(:first-child) {
+  border-top: 8px solid var(--gb-bg-subtle);
+}
+
 .gitboard-table__group-header:hover .gitboard-table__group-header-cell {
   background-color: var(--gb-bg-muted);
 }
@@ -1176,6 +1181,7 @@
   border: none;
   border-left: 1px solid var(--gb-border);
   border-right: 1px solid var(--gb-border);
+  border-top: 1px solid var(--gb-border);
   cursor: pointer;
   user-select: none;
   transition: background-color 0.15s ease;
@@ -1221,6 +1227,14 @@
   transition: transform 0.2s ease;
 }
 
+/* Group Color Indicator */
+.gitboard-table__group-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* Group Label and Count */
 .gitboard-table__group-label {
   @apply font-semibold;
@@ -1258,8 +1272,9 @@
   border-bottom: 1px solid var(--gb-border-muted);
 }
 
-.gitboard-table__tbody--grouped .gitboard-table__tr:last-of-type td {
-  border-bottom: none;
+/* Last row in each group gets a full border at bottom */
+.gitboard-table__tbody--grouped .gitboard-table__tr.gitboard-table__tr--group-last td {
+  border-bottom: 1px solid var(--gb-border);
 }
 
 /* Infinite Scroll Loading Styles */
