@@ -191,6 +191,7 @@ export interface GitBoardTableProps {
   onCreateView?: (view: ViewConfig) => void;  // Called when new view is created
   onUpdateView?: (view: ViewConfig) => void;  // Called when view is updated
   onDeleteView?: (viewId: string) => void;  // Called when view is deleted
+  onViewsReorder?: (views: ViewConfig[]) => void;  // Called when views are reordered
 
   // Infinite scroll props
   hasMore?: boolean;         // Whether there are more items to load

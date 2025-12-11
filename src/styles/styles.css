@@ -807,6 +807,17 @@
   .gitboard-view-tabs__tab-wrapper {
     @apply relative;
     @apply flex items-center;
+    cursor: grab;
+    transition: opacity 0.2s ease;
+  }
+
+  .gitboard-view-tabs__tab-wrapper--dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
+
+  .gitboard-view-tabs__tab-wrapper--drag-over {
+    border-left: 3px solid var(--gb-accent-emphasis);
   }
 
   .gitboard-view-tabs__input {

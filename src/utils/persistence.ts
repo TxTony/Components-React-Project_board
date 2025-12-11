@@ -13,6 +13,7 @@ export interface TableState {
   columnWidths?: Record<string, number>;
   fieldWidths?: Record<string, number>;
   hiddenColumns?: string[];
+  viewOrder?: string[];  // Ordered list of view IDs
 }
 
 const STORAGE_KEY_PREFIX = 'gitboard-table-';

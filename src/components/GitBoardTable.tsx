@@ -39,6 +39,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   onCreateView,
   onUpdateView,
   onDeleteView,
+  onViewsReorder,
   hasMore,
   isLoadingMore,
   onLoadMore,
@@ -577,11 +578,51 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleViewsReorder = (reorderedViews: ViewConfig[]) => {
+    // Update views state with new order
+    setViews(reorderedViews);
+
+    // Save view order to localStorage if tableId is provided
+    if (tableId) {
+      const viewOrder = reorderedViews.map((v) => v.id);
+      const currentState = loadTableState(tableId) || {};
+      saveTableState(tableId, {
+        ...currentState,
+        viewOrder,
+      });
+    }
+
+    // Call parent callback if provided
+    if (onViewsReorder) {
+      onViewsReorder(reorderedViews);
+    }
+  };
+
   // Update views when initialViews prop changes (using memoized key)
   useEffect(() => {
-    setViews(initialViews);
+    // Restore view order from localStorage if available
+    if (tableId && initialViews.length > 0) {
+      const savedState = loadTableState(tableId);
+      if (savedState?.viewOrder) {
+        // Reorder views based on saved order
+        const orderedViews = savedState.viewOrder
+          .map((viewId) => initialViews.find((v) => v.id === viewId))
+          .filter((v): v is ViewConfig => v !== undefined);
+
+        // Add any new views that aren't in the saved order
+        const newViews = initialViews.filter(
+          (v) => !savedState.viewOrder.includes(v.id)
+        );
+
+        setViews([...orderedViews, ...newViews]);
+      } else {
+        setViews(initialViews);
+      }
+    } else {
+      setViews(initialViews);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialViewsKey]); // Only re-run when the stringified views actually change
+  }, [initialViewsKey, tableId]); // Only re-run when the stringified views actually change
 
   // Set currentView when views array changes and currentView is null
   useEffect(() => {
@@ -672,6 +713,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onCreateView={onCreateView ? handleCreateView : undefined}
           onUpdateView={onUpdateView ? handleUpdateView : undefined}
           onDeleteView={onDeleteView}
+          onViewsReorder={handleViewsReorder}
         />
       )}
       <FilterBar

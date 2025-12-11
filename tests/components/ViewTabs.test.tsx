@@ -1499,4 +1499,101 @@ describe('ViewTabs', () => {
       expect(handleDeleteView).toHaveBeenCalledWith('view_filtered');
     });
   });
+
+  describe('View Reordering', () => {
+    it('allows dragging view tabs when onViewsReorder is provided', () => {
+      const { container } = render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onViewsReorder={vi.fn()}
+        />
+      );
+
+      const wrappers = container.querySelectorAll('.gitboard-view-tabs__tab-wrapper');
+      expect(wrappers[0]).toHaveAttribute('draggable', 'true');
+      expect(wrappers[1]).toHaveAttribute('draggable', 'true');
+      expect(wrappers[2]).toHaveAttribute('draggable', 'true');
+    });
+
+    it('renders all tab wrappers with drag handlers', () => {
+      const { container } = render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onViewsReorder={vi.fn()}
+        />
+      );
+
+      const wrappers = container.querySelectorAll('.gitboard-view-tabs__tab-wrapper');
+      expect(wrappers).toHaveLength(3);
+
+      wrappers.forEach((wrapper) => {
+        expect(wrapper).toHaveAttribute('draggable');
+      });
+    });
+
+    it('disables dragging when editing view name', async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onUpdateView={vi.fn()}
+          onViewsReorder={vi.fn()}
+        />
+      );
+
+      const allTasksTab = screen.getByText('All Tasks');
+      await user.dblClick(allTasksTab);
+
+      // Find the wrapper containing the input
+      const wrapper = container.querySelector('.gitboard-view-tabs__tab-wrapper');
+
+      // Should not be draggable while editing
+      expect(wrapper).toHaveAttribute('draggable', 'false');
+    });
+
+    it('onViewsReorder callback is provided to component', () => {
+      const onViewsReorder = vi.fn();
+      render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+          onViewsReorder={onViewsReorder}
+        />
+      );
+
+      // Component should render without errors with onViewsReorder provided
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs).toHaveLength(3);
+    });
+
+    it('renders draggable wrappers even without onViewsReorder', () => {
+      const { container } = render(
+        <ViewTabs
+          views={mockViews}
+          currentViewId="view_all"
+          currentFilters={[]}
+          onViewChange={vi.fn()}
+        />
+      );
+
+      const wrappers = container.querySelectorAll('.gitboard-view-tabs__tab-wrapper');
+      expect(wrappers).toHaveLength(3);
+
+      // Tabs are still rendered with draggable attribute
+      wrappers.forEach((wrapper) => {
+        expect(wrapper).toHaveAttribute('draggable');
+      });
+    });
+  });
 });

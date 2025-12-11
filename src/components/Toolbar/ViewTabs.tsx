@@ -21,6 +21,7 @@ export interface ViewTabsProps {
   onCreateView?: (view: ViewConfig) => void;
   onUpdateView?: (view: ViewConfig) => void;
   onDeleteView?: (viewId: string) => void;
+  onViewsReorder?: (views: ViewConfig[]) => void;
 }
 
 export const ViewTabs: React.FC<ViewTabsProps> = ({
@@ -31,10 +32,13 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
   onCreateView,
   onUpdateView,
   onDeleteView,
+  onViewsReorder,
 }) => {
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>('');
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [draggingViewId, setDraggingViewId] = useState<string | null>(null);
+  const [dragOverViewId, setDragOverViewId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -156,18 +160,80 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
     onUpdateView(updatedView);
   };
 
+  // Drag & Drop handlers for view reordering
+  const handleDragStart = (viewId: string, e: React.DragEvent) => {
+    setDraggingViewId(viewId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', viewId);
+  };
+
+  const handleDragOver = (viewId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggingViewId && draggingViewId !== viewId) {
+      setDragOverViewId(viewId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverViewId(null);
+  };
+
+  const handleDrop = (targetViewId: string, e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (!draggingViewId || !onViewsReorder || draggingViewId === targetViewId) {
+      setDraggingViewId(null);
+      setDragOverViewId(null);
+      return;
+    }
+
+    // Reorder views
+    const fromIndex = views.findIndex((v) => v.id === draggingViewId);
+    const toIndex = views.findIndex((v) => v.id === targetViewId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDraggingViewId(null);
+      setDragOverViewId(null);
+      return;
+    }
+
+    const newViews = [...views];
+    const [movedView] = newViews.splice(fromIndex, 1);
+    newViews.splice(toIndex, 0, movedView);
+
+    onViewsReorder(newViews);
+    setDraggingViewId(null);
+    setDragOverViewId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingViewId(null);
+    setDragOverViewId(null);
+  };
+
   return (
     <div className="gitboard-view-tabs" role="tablist">
       {views.map((view) => {
         const isActive = view.id === currentViewId;
         const isEditing = editingViewId === view.id;
+        const isDragging = draggingViewId === view.id;
+        const isDragOver = dragOverViewId === view.id;
 
         return (
           <div
             key={view.id}
             className={`gitboard-view-tabs__tab-wrapper ${
               isActive ? 'gitboard-view-tabs__tab-wrapper--active' : ''
+            } ${isDragging ? 'gitboard-view-tabs__tab-wrapper--dragging' : ''} ${
+              isDragOver ? 'gitboard-view-tabs__tab-wrapper--drag-over' : ''
             }`}
+            draggable={!isEditing}
+            onDragStart={(e) => handleDragStart(view.id, e)}
+            onDragOver={(e) => handleDragOver(view.id, e)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(view.id, e)}
+            onDragEnd={handleDragEnd}
           >
             {isEditing ? (
               <input
