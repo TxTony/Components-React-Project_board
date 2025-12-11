@@ -8,12 +8,13 @@ import { Row } from './Row';
 import { AddItemRow } from './AddItemRow';
 import { LoadingIndicator } from '../Shared/LoadingIndicator';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
-import type { FieldDefinition, CellValue, BulkUpdateEvent } from '@/types';
+import type { FieldDefinition, CellValue, BulkUpdateEvent, Row as RowType } from '@/types';
 import type { RowGroup } from '../../utils/grouping';
 
 export interface GroupedTableBodyProps {
   fields: FieldDefinition[];
   groups: RowGroup[];
+  groupByFieldId?: string | null;
   onEdit?: (edit: { rowId: string; fieldId: string; value: CellValue }) => void;
   showSelection?: boolean;
   selectedRows?: Set<string>;
@@ -25,6 +26,7 @@ export interface GroupedTableBodyProps {
   onRowReorder?: (fromIndex: number, toIndex: number) => void;
   onTitleClick?: (rowId: string) => void;
   onRowNumberDoubleClick?: (rowId: string) => void;
+  onRowContextMenu?: (row: RowType, position: { x: number; y: number }) => void;
 
   // Infinite scroll props
   hasMore?: boolean;
@@ -36,6 +38,7 @@ export interface GroupedTableBodyProps {
 export const GroupedTableBody: React.FC<GroupedTableBodyProps> = ({
   fields,
   groups,
+  groupByFieldId,
   onEdit,
   showSelection = false,
   selectedRows = new Set(),
@@ -47,6 +50,7 @@ export const GroupedTableBody: React.FC<GroupedTableBodyProps> = ({
   onRowReorder,
   onTitleClick,
   onRowNumberDoubleClick,
+  onRowContextMenu,
   hasMore = false,
   isLoadingMore = false,
   onLoadMore,
@@ -185,11 +189,25 @@ export const GroupedTableBody: React.FC<GroupedTableBodyProps> = ({
   // Calculate column count for group header row
   const columnCount = fields.filter((f) => f.visible).length + (showSelection ? 1 : 0) + 1; // +1 for row number
 
+  // Find the grouped field to get color information
+  const groupedField = groupByFieldId ? fields.find((f) => f.id === groupByFieldId) : null;
+
+  // Helper function to get color for a group value
+  const getGroupColor = (group: RowGroup): string | undefined => {
+    if (!groupedField || !groupedField.options || group.value === null) {
+      return undefined;
+    }
+    
+    const option = groupedField.options.find((opt) => opt.id === group.value);
+    return option?.color || option?.colour;
+  };
+
   return (
     <tbody className="gitboard-table__tbody gitboard-table__tbody--grouped">
-      {groups.map((group, groupIndex) => {
+      {groups.map((group) => {
         const isCollapsed = collapsedGroups.has(group.id);
         const hasRows = group.rows.length > 0;
+        const groupColor = getGroupColor(group);
 
         return (
           <React.Fragment key={group.id}>
@@ -220,6 +238,13 @@ export const GroupedTableBody: React.FC<GroupedTableBodyProps> = ({
                         <path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z" />
                       </svg>
                     </button>
+                    {groupColor && (
+                      <div
+                        className="gitboard-table__group-color-indicator"
+                        style={{ backgroundColor: groupColor }}
+                        aria-hidden="true"
+                      />
+                    )}
                     <h3 className="gitboard-table__group-label">{group.label}</h3>
                     <span className="gitboard-table__group-count">{group.count}</span>
                   </div>
@@ -256,6 +281,8 @@ export const GroupedTableBody: React.FC<GroupedTableBodyProps> = ({
                     onRowDragEnd={handleRowDragEnd}
                     onTitleClick={onTitleClick}
                     onRowNumberDoubleClick={onRowNumberDoubleClick}
+                    onContextMenu={onRowContextMenu}
+                    additionalClassName={index === group.rows.length - 1 ? 'gitboard-table__tr--group-last' : undefined}
                   />
                 ))}
               </>

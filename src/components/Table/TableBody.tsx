@@ -24,6 +24,7 @@ export interface TableBodyProps {
   onRowReorder?: (fromIndex: number, toIndex: number) => void;
   onTitleClick?: (rowId: string) => void;
   onRowNumberDoubleClick?: (rowId: string) => void;
+  onRowContextMenu?: (row: RowType, position: { x: number; y: number }) => void;
 
   // Infinite scroll props
   hasMore?: boolean;
@@ -46,6 +47,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
   onRowReorder,
   onTitleClick,
   onRowNumberDoubleClick,
+  onRowContextMenu,
   hasMore = false,
   isLoadingMore = false,
   onLoadMore,
@@ -225,6 +227,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
           onRowDragEnd={handleRowDragEnd}
           onTitleClick={onTitleClick}
           onRowNumberDoubleClick={onRowNumberDoubleClick}
+          onContextMenu={onRowContextMenu}
         />
       ))}
       <AddItemRow

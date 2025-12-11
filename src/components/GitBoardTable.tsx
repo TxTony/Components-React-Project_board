@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TableHeader } from './Table/TableHeader';
 import { TableBody } from './Table/TableBody';
 import { GroupedTableBody } from './Table/GroupedTableBody';
+import { RowContextMenu } from './Table/Menu/RowContextMenu';
 import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
 import { ViewTabs } from './Toolbar/ViewTabs';
@@ -16,7 +17,7 @@ import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { groupRows } from '../utils/grouping';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -44,6 +45,8 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   isLoadingMore,
   onLoadMore,
   loadingMessage,
+  customActions = [],
+  onContextMenuClick,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -76,7 +79,12 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   // Row detail panel state
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [detailPanelRow, setDetailPanelRow] = useState<Row | null>(null);
-  
+
+  // Context menu state
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuRow, setContextMenuRow] = useState<Row | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   // Ref to track previous initialRows to avoid unnecessary updates
   const prevInitialRowsRef = useRef<Row[]>();
   // Ref to track processedRows for shift-click range selection
@@ -519,6 +527,45 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  // Context menu handlers
+  const handleRowContextMenu = (row: Row, position: { x: number; y: number }) => {
+    setContextMenuRow(row);
+    setContextMenuPosition(position);
+    setContextMenuOpen(true);
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenuOpen(false);
+    setTimeout(() => {
+      setContextMenuRow(null);
+    }, 100);
+  };
+
+  const handleContextMenuOpen = (rowId: string) => {
+    handleCloseContextMenu();
+    handleTitleClick(rowId);
+  };
+
+  const handleContextMenuDelete = (rowId: string) => {
+    const updatedRows = rows.filter((row) => row.id !== rowId);
+    setRows(updatedRows);
+
+    if (onChange) {
+      onChange(updatedRows);
+    }
+  };
+
+  const handleContextMenuCustomAction = (actionName: string, row: Row) => {
+    if (onContextMenuClick) {
+      const event: ContextMenuClickEvent = {
+        type: 'context-menu-click',
+        actionName,
+        row,
+      };
+      onContextMenuClick(event);
+    }
+  };
+
   const handleViewChange = (view: ViewConfig) => {
     // Update current view
     setCurrentView(view);
@@ -750,6 +797,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             <GroupedTableBody
               fields={orderedFields}
               groups={groupedRows}
+              groupByFieldId={groupBy}
               onEdit={handleCellEdit}
               showSelection
               selectedRows={selectedRows}
@@ -761,6 +809,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
               onRowReorder={handleRowReorder}
               onTitleClick={handleTitleClick}
               onRowNumberDoubleClick={handleTitleClick}
+              onRowContextMenu={handleRowContextMenu}
               hasMore={hasMore}
               isLoadingMore={isLoadingMore}
               onLoadMore={onLoadMore}
@@ -781,6 +830,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
               onRowReorder={handleRowReorder}
               onTitleClick={handleTitleClick}
               onRowNumberDoubleClick={handleTitleClick}
+              onRowContextMenu={handleRowContextMenu}
               hasMore={hasMore}
               isLoadingMore={isLoadingMore}
               onLoadMore={onLoadMore}
@@ -799,6 +849,19 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onClose={handleDetailPanelClose}
           onContentUpdate={handleContentUpdate}
           onRowUpdate={handleRowValueUpdate}
+        />
+      )}
+
+      {/* Context Menu */}
+      {contextMenuOpen && contextMenuRow && (
+        <RowContextMenu
+          row={contextMenuRow}
+          position={contextMenuPosition}
+          onClose={handleCloseContextMenu}
+          onOpen={handleContextMenuOpen}
+          onDelete={handleContextMenuDelete}
+          customActions={customActions}
+          onCustomAction={handleContextMenuCustomAction}
         />
       )}
     </div>

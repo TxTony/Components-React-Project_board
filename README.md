@@ -4,7 +4,7 @@ A reusable GitHub-Projects-style table component, built with React + TypeScript,
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
-[![Tests](https://img.shields.io/badge/tests-264%20passing-success.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/tests-321%20passing-success.svg)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 🚀 Getting Started
@@ -408,12 +408,119 @@ function App() {
 
 ### 🎯 Advanced Features
 
-- **Context menus** - Right-click for row/column actions
+- **Context menus** - Right-click for row/column actions (see below for details)
 - **Keyboard navigation** - Full keyboard accessibility
 - **Loading states** - Graceful handling of async operations
 - **Error boundaries** - Resilient error handling
 - **Type-safe** - Complete TypeScript coverage
 - **Accessible** - ARIA labels and semantic HTML
+
+### 🖱️ Row Context Menu
+
+Right-click on any row to access context menu actions:
+
+- **Built-in actions**:
+  - **Show** - Opens the row detail panel
+  - **Delete** - Deletes the row (with confirmation dialog)
+- **Custom actions** - Add your own actions to the context menu
+- **Event dispatching** - Receive events when custom actions are clicked
+
+**Custom Actions Structure**:
+```typescript
+interface CustomAction {
+  name: string;      // Unique identifier for the action
+  label: string;     // Display text in the menu
+  icon?: string;     // Optional icon (emoji or text)
+}
+```
+
+**Example - Adding Custom Actions**:
+```tsx
+import { GitBoardTable } from '@txtony/gitboard-table';
+import type { CustomAction, ContextMenuClickEvent, Row } from '@txtony/gitboard-table';
+
+function App() {
+  const [rows, setRows] = useState<Row[]>(initialRows);
+
+  // Define custom actions
+  const customActions: CustomAction[] = [
+    { name: 'archive', label: 'Archive', icon: '📦' },
+    { name: 'duplicate', label: 'Duplicate', icon: '📋' },
+    { name: 'export', label: 'Export as PDF', icon: '📄' },
+    { name: 'share', label: 'Share' }, // No icon
+  ];
+
+  // Handle custom action clicks
+  const handleContextMenuClick = (event: ContextMenuClickEvent) => {
+    console.log('Action:', event.actionName);
+    console.log('Row:', event.row);
+
+    switch (event.actionName) {
+      case 'archive':
+        // Archive the row
+        archiveRow(event.row.id);
+        break;
+
+      case 'duplicate':
+        // Duplicate the row
+        const duplicatedRow = {
+          ...event.row,
+          id: generateNewId(),
+          values: { ...event.row.values }
+        };
+        setRows(prev => [...prev, duplicatedRow]);
+        break;
+
+      case 'export':
+        // Export row to PDF
+        exportRowToPDF(event.row);
+        break;
+
+      case 'share':
+        // Open share dialog
+        openShareDialog(event.row);
+        break;
+    }
+  };
+
+  return (
+    <GitBoardTable
+      fields={fields}
+      rows={rows}
+      onChange={setRows}
+      customActions={customActions}
+      onContextMenuClick={handleContextMenuClick}
+    />
+  );
+}
+```
+
+**How It Works**:
+1. Right-click any row to open the context menu
+2. Built-in actions (Show, Delete) appear at the top
+3. A divider separates built-in from custom actions
+4. Custom actions appear below with optional icons
+5. Clicking a custom action dispatches `onContextMenuClick` event
+6. Event includes the action name and full row data
+7. Handle the action in your callback function
+
+**Event Payload**:
+```typescript
+interface ContextMenuClickEvent {
+  type: 'context-menu-click';
+  actionName: string;  // The name of the clicked custom action
+  row: Row;            // Complete row data including id and values
+}
+```
+
+**Use Cases**:
+- Archive completed tasks
+- Duplicate rows with similar data
+- Export individual rows
+- Share rows via email/link
+- Move rows to different projects
+- Trigger custom workflows
+- Open external tools with row data
 
 ## 📋 Available NPM Commands
 
@@ -515,6 +622,8 @@ interface GitBoardTableProps {
   onCreateView?: (view: ViewConfig) => void;   // Called when new view is created
   onUpdateView?: (view: ViewConfig) => void;   // Called when view is updated
   onDeleteView?: (viewId: string) => void;     // Called when view is deleted
+  customActions?: CustomAction[];              // Custom actions for row context menu
+  onContextMenuClick?: (event: ContextMenuClickEvent) => void;  // Called when custom action clicked
 }
 ```
 
@@ -604,6 +713,26 @@ interface FilterConfig {
   field: string;                  // Field ID to filter
   operator: 'contains' | 'equals' | 'not-equals' | 'is-empty' | 'is-not-empty' | 'gt' | 'gte' | 'lt' | 'lte';
   value?: any;                    // Filter value (optional for is-empty/is-not-empty)
+}
+```
+
+### CustomAction
+
+```typescript
+interface CustomAction {
+  name: string;                   // Unique identifier for the action
+  label: string;                  // Display text shown in the menu
+  icon?: string;                  // Optional icon (emoji, text, or CSS class)
+}
+```
+
+### ContextMenuClickEvent
+
+```typescript
+interface ContextMenuClickEvent {
+  type: 'context-menu-click';     // Event type identifier
+  actionName: string;             // Name of the custom action that was clicked
+  row: Row;                       // Complete row data including id and values
 }
 ```
 
@@ -851,6 +980,69 @@ const handleRowSelect = (event: RowSelectionEvent) => {
 - Enable context menus for selected items
 - Sync selection state with external systems
 
+### onContextMenuClick - Custom Context Menu Actions
+
+✅ **NEW**: Called when a custom action is clicked in the row context menu.
+
+```typescript
+onContextMenuClick?: (event: ContextMenuClickEvent) => void;
+```
+
+**Triggers when**:
+- User right-clicks a row to open context menu
+- User clicks a custom action from the menu
+
+**Example**:
+```typescript
+const customActions: CustomAction[] = [
+  { name: 'archive', label: 'Archive', icon: '📦' },
+  { name: 'duplicate', label: 'Duplicate', icon: '📋' },
+  { name: 'export', label: 'Export as PDF', icon: '📄' },
+];
+
+const handleContextMenuClick = (event: ContextMenuClickEvent) => {
+  console.log('Action clicked:', event.actionName);
+  console.log('Row data:', event.row);
+
+  switch (event.actionName) {
+    case 'archive':
+      archiveRow(event.row.id);
+      showToast('Row archived successfully');
+      break;
+
+    case 'duplicate':
+      const newRow = {
+        ...event.row,
+        id: generateId(),
+        values: { ...event.row.values }
+      };
+      setRows(prev => [...prev, newRow]);
+      break;
+
+    case 'export':
+      exportRowToPDF(event.row);
+      trackEvent('row_exported', { rowId: event.row.id });
+      break;
+  }
+};
+
+<GitBoardTable
+  fields={fields}
+  rows={rows}
+  customActions={customActions}
+  onContextMenuClick={handleContextMenuClick}
+/>
+```
+
+**Use Cases**:
+- Archive or soft-delete rows
+- Duplicate rows with pre-filled data
+- Export individual rows to PDF/Excel
+- Share rows via email or link
+- Move rows to different projects
+- Trigger custom workflows
+- Integration with external tools
+
 📖 **See [EVENTS.md](./DOC_GEN_BY_AI/EVENTS.md) for complete event documentation including:**
 - Detailed payload structures
 - When each event fires
@@ -908,7 +1100,7 @@ Override theme variables in your CSS:
 
 The package includes comprehensive test coverage with:
 
-- **264 passing tests**
+- **321 passing tests** (264 + 57 new)
 - Vitest + React Testing Library
 - Unit tests for all components
 - Integration tests for complex interactions
@@ -917,11 +1109,15 @@ The package includes comprehensive test coverage with:
 - **58 view tabs tests** - Verify view switching, filters, creation, editing, and saving
 - **5 view management tests** - Verify column visibility and filter application from views
 - **5 FilterBar external filter tests** - Verify filter display from view changes
-- **39 new view management tests** - Comprehensive coverage of:
+- **39 view management tests** - Comprehensive coverage of:
   - Add view button functionality (7 tests)
   - Double-click to edit view name (11 tests)
   - Save button for filter changes (13 tests)
   - View creation and update callbacks (8 tests)
+- **36 content panel save button tests** - Manual save functionality with keyboard shortcuts
+- **57 context menu tests** - Row context menu with custom actions:
+  - RowContextMenu unit tests (33 tests)
+  - RowContextMenu integration tests (24 tests)
 
 ### Example Test
 
@@ -996,7 +1192,9 @@ import type {
   CellValue,
   RowSelectionEvent,
   RowReorderEvent,
-  BulkUpdateEvent
+  BulkUpdateEvent,
+  CustomAction,
+  ContextMenuClickEvent
 } from '@txtony/gitboard-table';
 
 // Styles

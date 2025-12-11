@@ -502,6 +502,20 @@ export const views: ViewConfig[] = [
     ],
     groupBy: null,
   },
+  {
+    id: 'view_by_status',
+    name: 'By Status',
+    columns: [
+      'fld_title_aa12e',
+      'fld_owner_19ad8',
+      'fld_tags_92f3a',
+      'fld_due_71fe3',
+      'fld_points_11b9e',
+    ],
+    sortBy: null,
+    filters: [],
+    groupBy: 'fld_status_c81f3',
+  },
 ];
 
 //

@@ -28,6 +28,8 @@ export interface RowProps {
   onRowDragEnd?: () => void;
   onTitleClick?: (rowId: string) => void;
   onRowNumberDoubleClick?: (rowId: string) => void;
+  onContextMenu?: (row: RowType, position: { x: number; y: number }) => void;
+  additionalClassName?: string;
 }
 
 export const Row: React.FC<RowProps> = ({
@@ -51,6 +53,8 @@ export const Row: React.FC<RowProps> = ({
   onRowDragEnd,
   onTitleClick,
   onRowNumberDoubleClick,
+  onContextMenu,
+  additionalClassName,
 }) => {
   const visibleFields = fields.filter((field) => field.visible);
 
@@ -72,11 +76,19 @@ export const Row: React.FC<RowProps> = ({
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onContextMenu) {
+      onContextMenu(row, { x: e.clientX, y: e.clientY });
+    }
+  };
+
   const rowClassName = [
     'gitboard-table__row',
     isSelected && 'gitboard-table__row--selected',
     isDragging && 'gitboard-table__row--dragging',
     isDragOver && 'gitboard-table__row--drag-over',
+    additionalClassName,
   ].filter(Boolean).join(' ');
 
   return (
@@ -88,6 +100,7 @@ export const Row: React.FC<RowProps> = ({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnd={onRowDragEnd}
+      onContextMenu={handleContextMenu}
     >
       {/* Drag handle */}
       <td className="gitboard-table__cell gitboard-table__cell--drag-handle">

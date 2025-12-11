@@ -198,6 +198,10 @@ export interface GitBoardTableProps {
   isLoadingMore?: boolean;   // Whether currently loading more items
   onLoadMore?: () => void;   // Called when user scrolls near bottom
   loadingMessage?: string;   // Optional custom loading message
+
+  // Context menu props
+  customActions?: CustomAction[];  // Custom actions to show in row context menu
+  onContextMenuClick?: (event: ContextMenuClickEvent) => void;  // Called when custom action is clicked
 }
 
 /**
@@ -272,4 +276,22 @@ export interface RowSelectionEvent {
   selectedRowIds: UID[];    // Array of selected row IDs
   selectedRows: Row[];      // Array of selected row objects
   lastAction: 'select' | 'deselect' | 'range' | 'multi' | 'clear';  // Type of action performed
+}
+
+/**
+ * Custom action for row context menu
+ */
+export interface CustomAction {
+  name: string;      // Unique identifier for the action
+  label: string;     // Display label for the action
+  icon?: string;     // Optional icon (e.g., emoji or CSS class)
+}
+
+/**
+ * Context menu click event
+ */
+export interface ContextMenuClickEvent {
+  type: 'context-menu-click';
+  actionName: string;  // Name of the custom action clicked
+  row: Row;            // The row that the action was performed on
 }
