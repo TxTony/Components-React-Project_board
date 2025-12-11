@@ -23,11 +23,13 @@ export const UnifiedDescriptionEditor: React.FC<UnifiedDescriptionEditorProps> =
   const [localValue, setLocalValue] = useState(value);
   const [mode, setMode] = useState<'edit' | 'render'>('render');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Update local value when prop changes
   useEffect(() => {
     setLocalValue(value);
+    setHasUnsavedChanges(false);
   }, [value]);
 
   // Parse content to extract links, documents, and mermaid diagrams
@@ -79,14 +81,33 @@ export const UnifiedDescriptionEditor: React.FC<UnifiedDescriptionEditorProps> =
   const handleChange = useCallback(
     (newValue: string) => {
       setLocalValue(newValue);
-
-      if (onChange) {
-        const metadata = parseContent(newValue);
-        onChange(newValue, metadata);
-      }
+      setHasUnsavedChanges(true);
     },
-    [onChange, parseContent]
+    []
   );
+
+  const handleSave = useCallback(() => {
+    if (onChange) {
+      const metadata = parseContent(localValue);
+      onChange(localValue, metadata);
+      setHasUnsavedChanges(false);
+    }
+  }, [onChange, parseContent, localValue]);
+
+  // Handle Ctrl+S / Cmd+S to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges) {
+          handleSave();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges, handleSave]);
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     handleChange(e.target.value);
@@ -245,6 +266,23 @@ export const UnifiedDescriptionEditor: React.FC<UnifiedDescriptionEditorProps> =
           >
             👁️ Preview
           </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!hasUnsavedChanges}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              hasUnsavedChanges
+                ? 'bg-green-600 text-white shadow-sm hover:bg-green-700'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            💾 Save
+          </button>
+          {hasUnsavedChanges && (
+            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+              Unsaved changes
+            </span>
+          )}
         </div>
 
         {/* Stats */}
@@ -302,6 +340,7 @@ export const UnifiedDescriptionEditor: React.FC<UnifiedDescriptionEditorProps> =
               <li>Add Mermaid diagrams using <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">```mermaid ... ```</code></li>
               <li>Create links with <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">[text](url)</code></li>
               <li><strong>Paste images</strong> directly from clipboard (Ctrl+V / Cmd+V) or drag & drop</li>
+              <li><strong>Save changes</strong> with the Save button or press <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">Ctrl+S</code> / <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">Cmd+S</code></li>
             </ul>
           </div>
         </div>
