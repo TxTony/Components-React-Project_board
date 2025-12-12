@@ -19,7 +19,8 @@ export type FieldType =
   | 'single-select'
   | 'multi-select'
   | 'assignee'
-  | 'iteration';
+  | 'iteration'
+  | 'link';
 
 /**
  * Option for select fields, tags, assignees, etc.

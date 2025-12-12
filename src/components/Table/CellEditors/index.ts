@@ -9,6 +9,7 @@ export { DateEditor } from './DateEditor';
 export { SelectEditor } from './SelectEditor';
 export { MultiSelectEditor } from './MultiSelectEditor';
 export { IterationEditor } from './IterationEditor';
+export { LinkEditor } from './LinkEditor';
 
 export type { TextEditorProps } from './TextEditor';
 export type { NumberEditorProps } from './NumberEditor';
@@ -16,3 +17,4 @@ export type { DateEditorProps } from './DateEditor';
 export type { SelectEditorProps } from './SelectEditor';
 export type { MultiSelectEditorProps } from './MultiSelectEditor';
 export type { IterationEditorProps } from './IterationEditor';
+export type { LinkEditorProps } from './LinkEditor';

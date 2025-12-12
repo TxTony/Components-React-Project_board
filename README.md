@@ -65,6 +65,12 @@ const fields: FieldDefinition[] = [
       { id: 'usr_2', label: 'Bob', color: '#f59e0b' },
     ],
   },
+  {
+    id: 'fld_docs_1',
+    name: 'Documentation',
+    type: 'link',
+    visible: true,
+  },
 ];
 
 const initialRows: Row[] = [
@@ -74,6 +80,7 @@ const initialRows: Row[] = [
       fld_title_1: 'Implement export system',
       fld_status_1: 'opt_inprog',
       fld_assignee_1: 'usr_1',
+      fld_docs_1: 'https://docs.example.com/export',
     },
   },
 ];
@@ -120,6 +127,7 @@ module.exports = {
 - **Multi-select** - Dropdown with multiple choices
 - **Assignee** - User assignment with colored badges
 - **Iteration** - Sprint/milestone tracking
+- **Link** - Clickable URLs with automatic https:// prepending
 
 ### ✍️ Inline Cell Editing
 
@@ -647,7 +655,8 @@ type FieldType =
   | 'single-select'
   | 'multi-select'
   | 'assignee'
-  | 'iteration';
+  | 'iteration'
+  | 'link';
 ```
 
 ### Row

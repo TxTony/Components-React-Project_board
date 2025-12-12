@@ -11,6 +11,7 @@ import { DateEditor } from './CellEditors/DateEditor';
 import { SelectEditor } from './CellEditors/SelectEditor';
 import { MultiSelectEditor } from './CellEditors/MultiSelectEditor';
 import { IterationEditor } from './CellEditors/IterationEditor';
+import { LinkEditor } from './CellEditors/LinkEditor';
 import type { FieldDefinition, CellValue } from '@/types';
 
 export interface CellProps {
@@ -190,6 +191,23 @@ export const Cell: React.FC<CellProps> = ({
       );
     }
 
+    // Handle link - show as clickable URL
+    if (field.type === 'link') {
+      if (!value) return <span className="text-gray-400 italic">—</span>;
+      const url = value.toString();
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {url}
+        </a>
+      );
+    }
+
     // Handle primitives
     return String(value);
   };
@@ -307,6 +325,15 @@ export const Cell: React.FC<CellProps> = ({
           <IterationEditor
             value={value}
             options={field.options || []}
+            onCommit={handleCommit}
+            onCancel={handleCancel}
+          />
+        );
+
+      case 'link':
+        return (
+          <LinkEditor
+            value={value}
             onCommit={handleCommit}
             onCancel={handleCancel}
           />

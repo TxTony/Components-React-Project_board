@@ -40,7 +40,7 @@ describe('Cell', () => {
       expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('renders null as empty', () => {
+    it('renders null as em dash placeholder', () => {
       const field = { id: 'fld_1', name: 'Title', type: 'text' as const, visible: true };
       const { container } = render(
         <table>
@@ -53,7 +53,7 @@ describe('Cell', () => {
       );
 
       const cell = container.querySelector('td');
-      expect(cell?.textContent).toBe('');
+      expect(cell?.textContent).toBe('—');
     });
 
     it('renders select option label instead of ID', () => {
@@ -545,6 +545,263 @@ describe('Cell', () => {
 
       // Caret button should be present
       expect(screen.getByLabelText('Open dropdown')).toBeInTheDocument();
+    });
+  });
+
+  describe('Link fields', () => {
+    it('renders link as clickable URL', () => {
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="https://example.com" rowId="row_1" />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const link = screen.getByRole('link', { name: 'https://example.com' });
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveAttribute('href', 'https://example.com');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it('renders empty link with em dash placeholder', () => {
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const { container } = render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value={null} rowId="row_1" />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const cell = container.querySelector('td');
+      expect(cell?.textContent).toBe('—');
+    });
+
+    it('enters edit mode when double-clicked', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="https://example.com" rowId="row_1" onEdit={onEdit} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const link = screen.getByRole('link');
+      await user.dblClick(link);
+
+      // Should show an input field
+      const input = screen.getByDisplayValue('https://example.com');
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveFocus();
+      expect(input).toHaveAttribute('type', 'url');
+    });
+
+    it('auto-prepends https:// to URLs without protocol', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="" rowId="row_1" onEdit={onEdit} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const placeholder = screen.getByText('—');
+      await user.dblClick(placeholder);
+
+      const input = screen.getByPlaceholderText('https://example.com');
+      await user.type(input, 'example.com');
+      await user.keyboard('{Enter}');
+
+      expect(onEdit).toHaveBeenCalledWith({
+        rowId: 'row_1',
+        fieldId: 'fld_1',
+        value: 'https://example.com',
+      });
+    });
+
+    it('preserves https:// protocol when already present', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="" rowId="row_1" onEdit={onEdit} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const placeholder = screen.getByText('—');
+      await user.dblClick(placeholder);
+
+      const input = screen.getByPlaceholderText('https://example.com');
+      await user.type(input, 'https://example.com');
+      await user.keyboard('{Enter}');
+
+      expect(onEdit).toHaveBeenCalledWith({
+        rowId: 'row_1',
+        fieldId: 'fld_1',
+        value: 'https://example.com',
+      });
+    });
+
+    it('preserves http:// protocol when present', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="" rowId="row_1" onEdit={onEdit} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const placeholder = screen.getByText('—');
+      await user.dblClick(placeholder);
+
+      const input = screen.getByPlaceholderText('https://example.com');
+      await user.type(input, 'http://example.com');
+      await user.keyboard('{Enter}');
+
+      expect(onEdit).toHaveBeenCalledWith({
+        rowId: 'row_1',
+        fieldId: 'fld_1',
+        value: 'http://example.com',
+      });
+    });
+
+    it('cancels edit on Escape key', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="https://original.com" rowId="row_1" onEdit={onEdit} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const link = screen.getByRole('link');
+      await user.dblClick(link);
+
+      const input = screen.getByDisplayValue('https://original.com');
+      await user.clear(input);
+      await user.type(input, 'https://changed.com');
+      await user.keyboard('{Escape}');
+
+      // Should not call onEdit
+      expect(onEdit).not.toHaveBeenCalled();
+
+      // Should show original value
+      expect(screen.getByRole('link', { name: 'https://original.com' })).toBeInTheDocument();
+    });
+
+    it('commits value on blur', async () => {
+      const user = userEvent.setup();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+      const onEdit = vi.fn();
+
+      render(
+        <div>
+          <table>
+            <tbody>
+              <tr>
+                <Cell field={field} value="https://original.com" rowId="row_1" onEdit={onEdit} />
+              </tr>
+            </tbody>
+          </table>
+          <button>Outside</button>
+        </div>
+      );
+
+      const link = screen.getByRole('link');
+      await user.dblClick(link);
+
+      const input = screen.getByDisplayValue('https://original.com');
+      await user.clear(input);
+      await user.type(input, 'modified.com');
+
+      // Click outside to trigger blur
+      const outsideButton = screen.getByText('Outside');
+      await user.click(outsideButton);
+
+      expect(onEdit).toHaveBeenCalledWith({
+        rowId: 'row_1',
+        fieldId: 'fld_1',
+        value: 'https://modified.com',
+      });
+    });
+
+    it('does not show caret for link fields', () => {
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+
+      render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="https://example.com" rowId="row_1" />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      // Caret button should NOT be present
+      expect(screen.queryByLabelText('Open dropdown')).not.toBeInTheDocument();
+    });
+
+    it('single click on cell selects cell for link fields', async () => {
+      const user = userEvent.setup();
+      const onSelect = vi.fn();
+      const field = { id: 'fld_1', name: 'Website', type: 'link' as const, visible: true };
+
+      const { container } = render(
+        <table>
+          <tbody>
+            <tr>
+              <Cell field={field} value="https://example.com" rowId="row_1" onSelect={onSelect} />
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      // Click on the cell content container (not the link itself, which has stopPropagation)
+      const cellContent = container.querySelector('.gitboard-table__cell-content');
+      if (cellContent) {
+        await user.click(cellContent as HTMLElement);
+      }
+
+      // Should call onSelect
+      expect(onSelect).toHaveBeenCalledWith('row_1', 'fld_1');
     });
   });
 

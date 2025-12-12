@@ -146,6 +146,12 @@ export const fields: FieldDefinition[] = [
     visible: true,
     options: iterations.map((i) => ({ id: i.id, label: i.label })),
   },
+  {
+    id: 'fld_link_9a8c2',
+    type: 'link',
+    name: 'Reference',
+    visible: true,
+  },
 ];
 
 //
@@ -162,6 +168,7 @@ export const rows: Row[] = [
       fld_due_71fe3: '2025-02-12',
       fld_points_11b9e: 3,
       fld_iteration_6d1a2: 'itr_week_1_baa21',
+      fld_link_9a8c2: 'https://oauth.net/2/',
     },
     content: {
       description: `# Login Page Implementation
@@ -221,6 +228,7 @@ Follow the existing design system and ensure mobile responsiveness.`,
       fld_due_71fe3: null,
       fld_points_11b9e: 5,
       fld_iteration_6d1a2: 'itr_week_2_e991a',
+      fld_link_9a8c2: 'https://axios-http.com/docs/interceptors',
     },
     content: {
       description: `# API Client Refactoring
@@ -318,6 +326,7 @@ Implement a robust API client using Axios with interceptors.
       fld_due_71fe3: '2025-02-20',
       fld_points_11b9e: 2,
       fld_iteration_6d1a2: 'itr_week_3_913ff',
+      fld_link_9a8c2: 'https://storybook.js.org',
     },
     content: {
       description: `# UI Component Library
@@ -435,6 +444,7 @@ export const views: ViewConfig[] = [
       'fld_due_71fe3',
       'fld_points_11b9e',
       'fld_iteration_6d1a2',
+      'fld_link_9a8c2',
     ],
     sortBy: null,
     filters: [],
