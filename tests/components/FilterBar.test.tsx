@@ -259,6 +259,92 @@ describe('FilterBar', () => {
       expect(lastCall[0].operator).toBe('gt');
       expect(lastCall[0].value).toBe('5');
     });
+
+    it('parses "in" operator with quoted values correctly', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:"In Progress",(empty)');
+
+      // Should parse as array with two values
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      expect(lastCall).toHaveLength(1);
+      expect(lastCall[0].operator).toBe('in');
+      expect(lastCall[0].value).toEqual(['In Progress', '(empty)']);
+    });
+
+    it('serializes "in" operator with quoted values correctly', () => {
+      const onFiltersChange = vi.fn();
+      const { rerender } = render(
+        <FilterBar
+          fields={fields}
+          filters={[]}
+          onFiltersChange={onFiltersChange}
+        />
+      );
+
+      // Now re-render with a filter containing an "in" operator with values that need quoting
+      rerender(
+        <FilterBar
+          fields={fields}
+          filters={[
+            {
+              field: 'fld_status_c81f3',
+              operator: 'in',
+              value: ['In Progress', '(empty)'],
+            },
+          ]}
+          onFiltersChange={onFiltersChange}
+        />
+      );
+
+      // The input should display the filter with properly quoted values
+      const input = screen.getByRole('textbox', { name: /filter input/i }) as HTMLInputElement;
+      // Should be: Status:in:"In Progress",(empty)
+      // NOT: Status:in:"In Progress,(empty)"
+      expect(input.value).toBe('Status:in:"In Progress",(empty)');
+    });
+
+    it('allows adding another filter after "in" operator without double quotes', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      const { rerender } = render(
+        <FilterBar
+          fields={fields}
+          filters={[
+            {
+              field: 'fld_status_c81f3',
+              operator: 'in',
+              value: ['In Progress', '(empty)'],
+            },
+          ]}
+          onFiltersChange={onFiltersChange}
+        />
+      );
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+
+      // Verify initial state
+      expect(input).toHaveValue('Status:in:"In Progress",(empty)');
+
+      // Add another filter
+      await user.click(input);
+      await user.keyboard(' Title:contains:test');
+
+      // Should parse both filters without errors
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      expect(lastCall).toHaveLength(2);
+      expect(lastCall[0].operator).toBe('in');
+      expect(lastCall[0].value).toEqual(['In Progress', '(empty)']);
+      expect(lastCall[1].operator).toBe('contains');
+      expect(lastCall[1].value).toBe('test');
+    });
   });
 
   describe('Keyboard navigation', () => {

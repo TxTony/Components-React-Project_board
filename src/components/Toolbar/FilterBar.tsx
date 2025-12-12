@@ -76,23 +76,28 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       // Quote value if it contains spaces
       let value = '';
       if (filter.operator === 'in' && Array.isArray(filter.value)) {
-        // For 'in' operator, join multiple values with comma
-        value = filter.value.map((v: any) => String(v)).join(',');
+        // For 'in' operator, quote each value individually if it contains spaces or commas
+        value = filter.value.map((v: any) => {
+          const str = String(v);
+          // Quote if contains spaces or commas
+          return (str.includes(' ') || str.includes(',')) ? `"${str}"` : str;
+        }).join(',');
       } else {
         value = String(filter.value || '');
-      }
 
-      // For select fields, get the label from option ID
-      if (field.options && field.type && ['single-select', 'multi-select', 'assignee', 'iteration'].includes(field.type)) {
-        const option = field.options.find(opt => opt.id === filter.value);
-        if (option) {
-          value = option.label;
+        // For select fields, get the label from option ID
+        if (field.options && field.type && ['single-select', 'multi-select', 'assignee', 'iteration'].includes(field.type)) {
+          const option = field.options.find(opt => opt.id === filter.value);
+          if (option) {
+            value = option.label;
+          }
         }
+
+        // Quote value if it contains spaces (but not for 'in' operator as we already handled it above)
+        value = value.includes(' ') ? `"${value}"` : value;
       }
 
-      const quotedValue = value.includes(' ') ? `"${value}"` : value;
-
-      return `${fieldName}:${displayOperator}:${quotedValue}`;
+      return `${fieldName}:${displayOperator}:${value}`;
     }).filter(Boolean).join(' ');
   };
 
@@ -187,9 +192,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         operator = 'lte';
       }
 
-      // Remove surrounding quotes from value
-      let rawValue = valuePart.replace(/^"(.*)"$/, '$1');
-
       // Handle operators that need a value
       const needsValue = operator !== 'is-empty' && operator !== 'is-not-empty';
 
@@ -197,10 +199,41 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       if (needsValue) {
         if (operator === 'in') {
-          // Split comma-separated values and trim
-          finalValue = rawValue.split(',').map((s) => s.trim()).filter(Boolean);
+          // Parse comma-separated values, respecting quotes
+          const values: string[] = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let i = 0; i < valuePart.length; i++) {
+            const char = valuePart[i];
+
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              // End of a value
+              const trimmed = current.trim();
+              if (trimmed) {
+                // Remove surrounding quotes if present
+                const unquoted = trimmed.replace(/^"(.*)"$/, '$1');
+                values.push(unquoted);
+              }
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+
+          // Don't forget the last value
+          const trimmed = current.trim();
+          if (trimmed) {
+            const unquoted = trimmed.replace(/^"(.*)"$/, '$1');
+            values.push(unquoted);
+          }
+
+          finalValue = values;
         } else {
-          finalValue = rawValue;
+          // Remove surrounding quotes from value for non-'in' operators
+          finalValue = valuePart.replace(/^"(.*)"$/, '$1');
         }
       }
 
