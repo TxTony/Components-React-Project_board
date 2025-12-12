@@ -333,27 +333,52 @@ export function extractAutoFillValues(
       case 'single-select':
       case 'assignee':
       case 'iteration':
-        // Filter value is a label string, need to find the option ID
+        // For 'equals' operator, filter value is already an option ID
+        // For 'contains' operator, filter value is a label string
         if (field.options) {
-          const option = field.options.find(
-            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
-          );
-          if (option) {
-            autoFillValues[filter.field] = option.id;
+          if (filter.operator === 'equals') {
+            // Value is already an ID, use it directly
+            autoFillValues[filter.field] = filter.value;
+          } else {
+            // Value is a label string, need to find the option ID
+            const option = field.options.find(
+              (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+            );
+            if (option) {
+              autoFillValues[filter.field] = option.id;
+            }
           }
         }
         break;
 
       case 'multi-select':
+        // For 'equals' operator, value might be an ID
         // For 'contains' operator, the value is a label string
         // For multi-select, we add it to an array
         if (field.options) {
-          const option = field.options.find(
-            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
-          );
-          if (option) {
-            // For multi-select, value should be an array of IDs
-            autoFillValues[filter.field] = [option.id];
+          if (filter.operator === 'equals') {
+            // Check if value is already an option ID
+            const optionById = field.options.find((opt) => opt.id === filter.value);
+            if (optionById) {
+              autoFillValues[filter.field] = [filter.value as string];
+            } else {
+              // Try to find by label
+              const optionByLabel = field.options.find(
+                (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+              );
+              if (optionByLabel) {
+                autoFillValues[filter.field] = [optionByLabel.id];
+              }
+            }
+          } else {
+            // For 'contains', value is a label string
+            const option = field.options.find(
+              (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+            );
+            if (option) {
+              // For multi-select, value should be an array of IDs
+              autoFillValues[filter.field] = [option.id];
+            }
           }
         }
         break;

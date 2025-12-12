@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GitBoardTable } from '../../src/components/GitBoardTable';
 import { fields, rows } from '../../src/mocks/mockData';
+import type { FilterConfig } from '../../src/types';
 
 describe('Row Management', () => {
   describe('Add Item', () => {
@@ -74,6 +75,332 @@ describe('Row Management', () => {
       await user.type(addInput, '{Enter}');
 
       expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Add Item with Filter Auto-Fill', () => {
+    it('auto-fills single-select field when filter with equals operator is active', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up a filter for Status field with equals operator
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'equals', value: 'opt_status_done_77de' }
+      ];
+
+      // Find the status field to get its initial view configuration
+      const statusField = fields.find((f) => f.id === 'fld_status_c81f3');
+      
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Check that the status field was auto-filled with the filter value
+      expect(newRow?.values['fld_status_c81f3']).toBe('opt_status_done_77de');
+      
+      // Title should still be set
+      const titleField = fields.find((f) => f.type === 'title');
+      if (titleField) {
+        expect(newRow?.values[titleField.id]).toBe('New Task');
+      }
+    });
+
+    it('auto-fills assignee field when filter with contains operator is active', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up a filter for Owner/Assignee field with contains operator
+      // Note: 'contains' operator uses label, not ID
+      const filters: FilterConfig[] = [
+        { field: 'fld_owner_19ad8', operator: 'contains', value: 'Tony Tip' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Check that the owner field was auto-filled with the ID
+      expect(newRow?.values['fld_owner_19ad8']).toBe('usr_tony_a19f2');
+    });
+
+    it('auto-fills multiple fields when multiple filters are active', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up multiple filters
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'equals', value: 'opt_status_progress_29bb' },
+        { field: 'fld_owner_19ad8', operator: 'equals', value: 'usr_tony_a19f2' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Check that both fields were auto-filled
+      expect(newRow?.values['fld_status_c81f3']).toBe('opt_status_progress_29bb');
+      expect(newRow?.values['fld_owner_19ad8']).toBe('usr_tony_a19f2');
+    });
+
+    it('does not auto-fill when filter uses non-autofill operator', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up a filter with 'not-equals' operator (should not auto-fill)
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'not-equals', value: 'opt_status_done_77de' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Status field should NOT be auto-filled (undefined or not set)
+      expect(newRow?.values['fld_status_c81f3']).toBeUndefined();
+    });
+
+    it('auto-fills select field with contains operator using label', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Test that 'contains' operator with label works for single-select fields
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'contains', value: 'Done' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Status field should be auto-filled with the option ID
+      expect(newRow?.values['fld_status_c81f3']).toBe('opt_status_done_77de');
+      // Title should still be from user input
+      const titleField = fields.find((f) => f.type === 'title' || f.id === 'fld_title_aa12e');
+      if (titleField) {
+        expect(newRow?.values[titleField.id]).toBe('New Task');
+      }
+    });
+
+    it('title field takes precedence over auto-fill from filter', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Get the title field
+      const titleField = fields.find((f) => f.type === 'title');
+      
+      if (titleField) {
+        // Try to auto-fill the title field via filter
+        const filters: FilterConfig[] = [
+          { field: titleField.id, operator: 'contains', value: 'filter value' }
+        ];
+
+        render(
+          <GitBoardTable 
+            fields={fields} 
+            rows={rows} 
+            onChange={onChange}
+            initialView={{ 
+              id: 'view1', 
+              name: 'Test View', 
+              filters 
+            }}
+          />
+        );
+
+        const addInput = screen.getByPlaceholderText(/add item/i);
+        await user.type(addInput, 'New Task{Enter}');
+
+        expect(onChange).toHaveBeenCalled();
+        const updatedRows = onChange.mock.calls[0]?.[0];
+        const newRow = updatedRows[updatedRows.length - 1];
+
+        // Title should be from user input, not filter
+        expect(newRow?.values[titleField.id]).toBe('New Task');
+      }
+    });
+
+    it('uses first filter when multiple filters exist for same field', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up multiple filters for the same field
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'equals', value: 'opt_status_done_77de' },
+        { field: 'fld_status_c81f3', operator: 'equals', value: 'opt_status_todo_118a' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Should use the first filter's value
+      expect(newRow?.values['fld_status_c81f3']).toBe('opt_status_done_77de');
+    });
+
+    it('auto-fills number field when filter is active', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Find a number field
+      const numberField = fields.find((f) => f.type === 'number');
+      
+      if (numberField) {
+        const filters: FilterConfig[] = [
+          { field: numberField.id, operator: 'equals', value: 5 }
+        ];
+
+        render(
+          <GitBoardTable 
+            fields={fields} 
+            rows={rows} 
+            onChange={onChange}
+            initialView={{ 
+              id: 'view1', 
+              name: 'Test View', 
+              filters 
+            }}
+          />
+        );
+
+        const addInput = screen.getByPlaceholderText(/add item/i);
+        await user.type(addInput, 'New Task{Enter}');
+
+        expect(onChange).toHaveBeenCalled();
+        const updatedRows = onChange.mock.calls[0]?.[0];
+        const newRow = updatedRows[updatedRows.length - 1];
+
+        // Number field should be auto-filled
+        expect(newRow?.values[numberField.id]).toBe(5);
+      }
+    });
+
+    it('does not auto-fill when filter value is empty', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      
+      // Set up a filter with empty value
+      const filters: FilterConfig[] = [
+        { field: 'fld_status_c81f3', operator: 'equals', value: '' }
+      ];
+
+      render(
+        <GitBoardTable 
+          fields={fields} 
+          rows={rows} 
+          onChange={onChange}
+          initialView={{ 
+            id: 'view1', 
+            name: 'Test View', 
+            filters 
+          }}
+        />
+      );
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      expect(onChange).toHaveBeenCalled();
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Status field should NOT be auto-filled
+      expect(newRow?.values['fld_status_c81f3']).toBeUndefined();
     });
   });
 
