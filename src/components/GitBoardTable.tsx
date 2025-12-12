@@ -152,8 +152,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       const fieldsToHide = allFieldIds.filter(fieldId => !currentView.columns.includes(fieldId));
       setHiddenColumns(new Set(fieldsToHide));
 
-      // Set field order based on currentView.columns
-      setFieldOrder(currentView.columns);
+      // Set field order: start with visible columns from view, then append hidden columns
+      // This ensures all fields remain in fieldOrder even when hidden
+      const visibleFields = currentView.columns.filter(id => allFieldIds.includes(id));
+      const hiddenFields = fieldsToHide;
+      setFieldOrder([...visibleFields, ...hiddenFields]);
     }
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -317,6 +320,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
 
     // Update current view's column order if we have a current view and onUpdateView callback
     if (currentView && onUpdateView) {
+      // Preserve all fields (visible and hidden) in the view's columns
       const updatedView: ViewConfig = {
         ...currentView,
         columns: newOrder,
@@ -353,12 +357,14 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
 
       // Update current view's visible columns if we have a current view and onUpdateView callback
       if (currentView && onUpdateView) {
-        // Calculate visible columns (not in hiddenColumns) while preserving current order
+        // Calculate visible and hidden columns separately, maintaining their order
         const visibleColumns = fieldOrder.filter(id => !newSet.has(id));
+        const hiddenColumns = fieldOrder.filter(id => newSet.has(id));
 
+        // Store ALL columns (visible + hidden) in the view to preserve hidden fields
         const updatedView: ViewConfig = {
           ...currentView,
-          columns: visibleColumns,
+          columns: [...visibleColumns, ...hiddenColumns],
         };
 
         // Update the view in local state
