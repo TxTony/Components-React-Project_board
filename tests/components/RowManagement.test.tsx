@@ -76,6 +76,41 @@ describe('Row Management', () => {
 
       expect(onChange).not.toHaveBeenCalled();
     });
+
+    it('creates row with title in correct field even when columns are reordered', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+
+      // Find title and status fields
+      const titleField = fields.find((f) => f.type === 'title');
+      const statusField = fields.find((f) => f.id === 'fld_status_c81f3');
+
+      // Create a view with Status as the first column (before Title)
+      const reorderedView = {
+        id: 'view1',
+        name: 'Test View',
+        columns: [statusField?.id, titleField?.id, ...fields.filter(f => f.id !== titleField?.id && f.id !== statusField?.id).map(f => f.id)].filter((id): id is string => id !== undefined),
+        filters: [] as FilterConfig[],
+      };
+
+      render(<GitBoardTable fields={fields} rows={rows} onChange={onChange} initialView={reorderedView} />);
+
+      const addInput = screen.getByPlaceholderText(/add item/i);
+      await user.type(addInput, 'New Task{Enter}');
+
+      const updatedRows = onChange.mock.calls[0]?.[0];
+      const newRow = updatedRows[updatedRows.length - 1];
+
+      // Title should be in the title field, NOT in the first visible column (Status)
+      if (titleField) {
+        expect(newRow?.values[titleField.id]).toBe('New Task');
+      }
+
+      // Status field should be empty (not 'New Task')
+      if (statusField) {
+        expect(newRow?.values[statusField.id]).toBeUndefined();
+      }
+    });
   });
 
   describe('Add Item with Filter Auto-Fill', () => {

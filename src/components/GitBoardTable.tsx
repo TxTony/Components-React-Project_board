@@ -408,8 +408,8 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   };
 
   const handleAddItem = (title: string) => {
-    // Find the title field (first visible field or field with type 'title')
-    const titleField = orderedFields.find((f) => f.type === 'title') || orderedFields[0];
+    // Find the title field - use original fields array to avoid issues with column reordering
+    const titleField = fields.find((f) => f.type === 'title') || fields.find((f) => f.type === 'text');
 
     if (!titleField) return;
 
