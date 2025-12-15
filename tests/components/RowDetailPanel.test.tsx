@@ -8,6 +8,14 @@ import { RowDetailPanel } from '@/components/ContentPanel/RowDetailPanel';
 import type { Row } from '@/types';
 
 describe('RowDetailPanel', () => {
+  const mockFields = [
+    { id: 'title', name: 'Title', type: 'title' as const, visible: true },
+    { id: 'status', name: 'Status', type: 'single-select' as const, visible: true, options: [
+      { id: 'status_1', label: 'In Progress', color: 'blue' },
+      { id: 'status_2', label: 'Done', color: 'green' },
+    ]},
+  ];
+
   const mockRow: Row = {
     id: 'row_test_1',
     values: {
@@ -43,6 +51,7 @@ describe('RowDetailPanel', () => {
 
   const mockProps = {
     row: mockRow,
+    fields: mockFields,
     isOpen: true,
     onClose: vi.fn(),
     onContentUpdate: vi.fn(),
@@ -65,7 +74,8 @@ describe('RowDetailPanel', () => {
 
     it('should display row title', () => {
       render(<RowDetailPanel {...mockProps} />);
-      expect(screen.getByText('Test Task')).toBeInTheDocument();
+      const header = screen.getByRole('complementary').querySelector('.gitboard-row-detail-panel__header');
+      expect(header).toHaveTextContent('Test Task');
     });
 
     it('should render close button', () => {

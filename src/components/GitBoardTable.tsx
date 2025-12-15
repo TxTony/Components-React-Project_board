@@ -561,6 +561,25 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleContextMenuDuplicate = (rowId: string) => {
+    const rowToDuplicate = rows.find((row) => row.id === rowId);
+    if (!rowToDuplicate) return;
+
+    const newRow: Row = {
+      ...rowToDuplicate,
+      id: generateRowId(),
+      content: rowToDuplicate.content ? { ...rowToDuplicate.content } : undefined,
+    };
+
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+    const updatedRows = [...rows.slice(0, rowIndex + 1), newRow, ...rows.slice(rowIndex + 1)];
+    setRows(updatedRows);
+
+    if (onChange) {
+      onChange(updatedRows);
+    }
+  };
+
   const handleContextMenuCustomAction = (actionName: string, row: Row) => {
     if (onContextMenuClick) {
       const event: ContextMenuClickEvent = {
@@ -855,6 +874,10 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onClose={handleDetailPanelClose}
           onContentUpdate={handleContentUpdate}
           onRowUpdate={handleRowValueUpdate}
+          onDelete={handleContextMenuDelete}
+          onDuplicate={handleContextMenuDuplicate}
+          customActions={customActions}
+          onCustomAction={handleContextMenuCustomAction}
         />
       )}
 
@@ -866,6 +889,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onClose={handleCloseContextMenu}
           onOpen={handleContextMenuOpen}
           onDelete={handleContextMenuDelete}
+          onDuplicate={handleContextMenuDuplicate}
           customActions={customActions}
           onCustomAction={handleContextMenuCustomAction}
         />
