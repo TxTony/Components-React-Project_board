@@ -27,15 +27,17 @@ export const IterationEditor: React.FC<IterationEditorProps> = ({
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Calculate position relative to the cell
+  // Calculate position relative to the viewport (fixed positioning)
   useEffect(() => {
     if (dropdownRef.current) {
       const parentCell = dropdownRef.current.closest('td');
       if (parentCell) {
         const rect = parentCell.getBoundingClientRect();
+        // Using fixed positioning, so no need to add scroll offsets
+        // getBoundingClientRect() already returns viewport-relative coordinates
         setPosition({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.bottom,
+          left: rect.left,
         });
       }
     }
