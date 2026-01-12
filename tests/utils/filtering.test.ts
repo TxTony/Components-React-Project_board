@@ -124,10 +124,31 @@ describe('filterRows', () => {
       expect(filtered).toHaveLength(1);
       expect(filtered[0]?.id).toBe('row_3');
     });
+
+    it('filters select field by option label', () => {
+      // Should work with labels, not just IDs
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'equals', value: 'Done' },
+      ];
+
+      const filtered = filterRows(rows, filters, fields);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]?.id).toBe('row_3');
+    });
+
+    it('filters select field by label is case-insensitive', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'equals', value: 'done' }, // lowercase
+      ];
+
+      const filtered = filterRows(rows, filters, fields);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]?.id).toBe('row_3');
+    });
   });
 
   describe('Not-equals operator', () => {
-    it('filters with not-equals operator', () => {
+    it('filters with not-equals operator using option ID', () => {
       const filters: FilterConfig[] = [
         { field: 'fld_status', operator: 'not-equals', value: 'opt_done' },
       ];
@@ -136,6 +157,29 @@ describe('filterRows', () => {
       expect(filtered).toHaveLength(2);
       expect(filtered.map((r) => r.id)).toContain('row_1');
       expect(filtered.map((r) => r.id)).toContain('row_2');
+    });
+
+    it('filters with not-equals operator using option label', () => {
+      // Regression test: not-equals should work with labels, not just IDs
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'not-equals', value: 'In Progress' },
+      ];
+
+      const filtered = filterRows(rows, filters, fields);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).toContain('row_2'); // Status: Todo
+      expect(filtered.map((r) => r.id)).toContain('row_3'); // Status: Done
+      expect(filtered.map((r) => r.id)).not.toContain('row_1'); // Status: In Progress (excluded)
+    });
+
+    it('filters with not-equals operator using label is case-insensitive', () => {
+      const filters: FilterConfig[] = [
+        { field: 'fld_status', operator: 'not-equals', value: 'in progress' }, // lowercase
+      ];
+
+      const filtered = filterRows(rows, filters, fields);
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((r) => r.id)).not.toContain('row_1'); // Status: In Progress (excluded)
     });
   });
 

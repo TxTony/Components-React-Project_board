@@ -139,25 +139,52 @@ function matchesFilter(
     }
 
     case 'equals':
-      // For select fields, compare IDs directly
+      // For select fields, need to handle both ID and label matching
       if (
         field.type === 'single-select' ||
         field.type === 'assignee' ||
         field.type === 'iteration'
       ) {
-        return value === filter.value;
+        // First try direct ID comparison
+        if (value === filter.value) {
+          return true;
+        }
+        // If no match, try to find option by label (case-insensitive)
+        if (field.options) {
+          const option = field.options.find(
+            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+          );
+          if (option) {
+            return value === option.id;
+          }
+        }
+        return false;
       }
       // For other fields, compare display values
       return displayValue === filterValue;
 
     case 'not-equals':
-      // For select fields, compare IDs directly
+      // For select fields, need to handle both ID and label matching
       if (
         field.type === 'single-select' ||
         field.type === 'assignee' ||
         field.type === 'iteration'
       ) {
-        return value !== filter.value;
+        // First try direct ID comparison
+        if (value === filter.value) {
+          return false;
+        }
+        // If no match, try to find option by label (case-insensitive)
+        if (field.options) {
+          const option = field.options.find(
+            (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
+          );
+          if (option) {
+            return value !== option.id;
+          }
+        }
+        // If we couldn't find the option, assume not equal
+        return true;
       }
       // For other fields, compare display values
       return displayValue !== filterValue;
@@ -333,19 +360,19 @@ export function extractAutoFillValues(
       case 'single-select':
       case 'assignee':
       case 'iteration':
-        // For 'equals' operator, filter value is already an option ID
-        // For 'contains' operator, filter value is a label string
+        // For both 'equals' and 'contains' operators, value could be an ID or label
         if (field.options) {
-          if (filter.operator === 'equals') {
-            // Value is already an ID, use it directly
+          // First, check if value is already an option ID
+          const optionById = field.options.find((opt) => opt.id === filter.value);
+          if (optionById) {
             autoFillValues[filter.field] = filter.value;
           } else {
-            // Value is a label string, need to find the option ID
-            const option = field.options.find(
+            // Try to find by label (case-insensitive)
+            const optionByLabel = field.options.find(
               (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
             );
-            if (option) {
-              autoFillValues[filter.field] = option.id;
+            if (optionByLabel) {
+              autoFillValues[filter.field] = optionByLabel.id;
             }
           }
         }
