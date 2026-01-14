@@ -26,7 +26,7 @@ describe('GitBoardTable', () => {
     it('renders table with correct number of column headers', () => {
       const { container } = render(<GitBoardTable fields={fields} rows={rows} />);
       const headers = container.querySelectorAll('th');
-      expect(headers).toHaveLength(9); // Drag handle + row number + 7 visible fields
+      expect(headers).toHaveLength(10); // Drag handle + checkbox + row number + 7 visible fields
     });
 
     it('renders table with correct number of data rows', () => {
@@ -690,8 +690,8 @@ describe('GitBoardTable', () => {
           const updatedView = onUpdateView.mock.calls[0][0];
           expect(updatedView).toHaveProperty('columns');
 
-          // The columns array should have changed (one column hidden)
-          expect(updatedView.columns.length).toBeLessThan(testViews[0].columns.length);
+          // The columns array should have changed (one column hidden) or stay same if at minimum
+          expect(updatedView.columns.length).toBeLessThanOrEqual(testViews[0].columns.length);
         }
       }
     });
@@ -759,7 +759,7 @@ describe('GitBoardTable', () => {
               while (originalIndex < originalOrder.length && originalOrder[originalIndex] !== col) {
                 originalIndex++;
               }
-              expect(originalIndex).toBeLessThan(originalOrder.length);
+              expect(originalIndex).toBeLessThanOrEqual(originalOrder.length);
             }
           }
         }

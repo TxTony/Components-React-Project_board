@@ -46,8 +46,8 @@ describe('TableBody', () => {
       const firstRow = tbody?.querySelector('tr');
       const cells = firstRow?.querySelectorAll('td');
 
-      // Should have 9 cells (drag handle + row number + 7 visible fields)
-      expect(cells).toHaveLength(9);
+      // Should have 10 cells (drag handle + checkbox + row number + 7 visible fields)
+      expect(cells).toHaveLength(10);
     });
 
     it('renders with empty rows array', () => {

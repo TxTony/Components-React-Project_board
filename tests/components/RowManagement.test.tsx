@@ -524,7 +524,9 @@ describe('Row Management', () => {
       // Select first two rows (use Ctrl+Click for multi-selection)
       const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
       await user.click(rowNumbers[0] as HTMLElement);
-      await user.click(rowNumbers[1] as HTMLElement, { ctrlKey: true });
+      await user.keyboard('[ControlLeft>]');
+      await user.click(rowNumbers[1] as HTMLElement);
+      await user.keyboard('[/ControlLeft]');
 
       // Click delete
       const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -558,7 +560,9 @@ describe('Row Management', () => {
 
       const rowNumbers = container.querySelectorAll('.gitboard-table__cell--row-number');
       await user.click(rowNumbers[0] as HTMLElement);
-      await user.click(rowNumbers[1] as HTMLElement, { ctrlKey: true });
+      await user.keyboard('[ControlLeft>]');
+      await user.click(rowNumbers[1] as HTMLElement);
+      await user.keyboard('[/ControlLeft]');
 
       expect(screen.getByText(/2 selected/i)).toBeInTheDocument();
     });
