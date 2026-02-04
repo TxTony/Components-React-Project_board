@@ -60,12 +60,16 @@ export const createTableShortcuts = ({
   onAddRow,
   onEscape,
   onSearch,
+  onCopy,
+  onPaste,
 }: {
   onSelectAll?: () => void;
   onDeleteSelected?: () => void;
   onAddRow?: () => void;
   onEscape?: () => void;
   onSearch?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
 }): KeyboardShortcut[] => {
   const shortcuts: KeyboardShortcut[] = [];
 
@@ -115,6 +119,24 @@ export const createTableShortcuts = ({
       ctrl: true,
       handler: onSearch,
       description: 'Focus search',
+    });
+  }
+
+  if (onCopy) {
+    shortcuts.push({
+      key: 'c',
+      ctrl: true,
+      handler: onCopy,
+      description: 'Copy selected cell',
+    });
+  }
+
+  if (onPaste) {
+    shortcuts.push({
+      key: 'v',
+      ctrl: true,
+      handler: onPaste,
+      description: 'Paste to selected cell',
     });
   }
 

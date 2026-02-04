@@ -17,6 +17,7 @@ import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { groupRows } from '../utils/grouping';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
+import { useKeyboardShortcuts, createTableShortcuts } from '../hooks/useKeyboardShortcuts';
 import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent, GroupByChangeEvent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
@@ -73,6 +74,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   const [lastSelectedRowId, setLastSelectedRowId] = useState<string | null>(null);
   const [lastSelectionAction, setLastSelectionAction] = useState<'select' | 'deselect' | 'range' | 'multi' | 'clear'>('select');
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; fieldId: string } | null>(null);
+  const [copiedCell, setCopiedCell] = useState<{ value: CellValue; fieldType: string } | null>(null);
   const [fieldOrder, setFieldOrder] = useState<string[]>(fields.map((f) => f.id));
   const [fieldWidths, setFieldWidths] = useState<Record<string, number>>({});
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
@@ -311,6 +313,117 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
 
   const handleCellSelect = (rowId: string, fieldId: string) => {
     setSelectedCell({ rowId, fieldId });
+  };
+
+  // Copy selected cell value
+  const handleCellCopy = () => {
+    if (!selectedCell) return;
+
+    const row = rows.find((r) => r.id === selectedCell.rowId);
+    if (!row) return;
+
+    const field = fields.find((f) => f.id === selectedCell.fieldId);
+    if (!field) return;
+
+    const value = row.values[selectedCell.fieldId];
+    setCopiedCell({ value, fieldType: field.type });
+
+    // Also copy to system clipboard as text for external use
+    let textValue = '';
+    if (Array.isArray(value)) {
+      // For multi-select, get labels
+      if (field.options) {
+        textValue = value
+          .map((v) => field.options?.find((opt) => opt.id === v)?.label || v)
+          .join(', ');
+      } else {
+        textValue = value.join(', ');
+      }
+    } else if (value !== null && value !== undefined) {
+      // For single-select, get label
+      if (field.options && field.type !== 'text' && field.type !== 'title' && field.type !== 'number' && field.type !== 'date' && field.type !== 'link') {
+        const option = field.options.find((opt) => opt.id === value);
+        textValue = option?.label || String(value);
+      } else {
+        textValue = String(value);
+      }
+    }
+
+    if (textValue) {
+      navigator.clipboard.writeText(textValue).catch(() => {
+        // Clipboard API may fail in some contexts, ignore error
+      });
+    }
+  };
+
+  // Paste copied cell value to selected cell
+  const handleCellPaste = () => {
+    if (!selectedCell || !copiedCell) return;
+
+    const targetField = fields.find((f) => f.id === selectedCell.fieldId);
+    if (!targetField) return;
+
+    // Check if paste is compatible (same field type or compatible types)
+    let valueToSet = copiedCell.value;
+
+    // Handle type compatibility
+    if (copiedCell.fieldType !== targetField.type) {
+      // Text/title can accept most values as string
+      if (targetField.type === 'text' || targetField.type === 'title') {
+        if (Array.isArray(copiedCell.value)) {
+          valueToSet = copiedCell.value.join(', ');
+        } else {
+          valueToSet = String(copiedCell.value ?? '');
+        }
+      }
+      // Number field needs numeric value
+      else if (targetField.type === 'number') {
+        const num = Number(copiedCell.value);
+        if (isNaN(num)) return; // Can't paste non-numeric to number field
+        valueToSet = num;
+      }
+      // For select fields, only paste if value exists in target options
+      else if (
+        (targetField.type === 'single-select' ||
+          targetField.type === 'assignee' ||
+          targetField.type === 'iteration') &&
+        targetField.options
+      ) {
+        // Try to find matching option by ID or label
+        const option = targetField.options.find(
+          (opt) => opt.id === copiedCell.value || opt.label === copiedCell.value
+        );
+        if (!option) return; // Value not found in target options
+        valueToSet = option.id;
+      }
+      // Multi-select needs array
+      else if (targetField.type === 'multi-select' && targetField.options) {
+        if (Array.isArray(copiedCell.value)) {
+          // Filter to only valid options
+          valueToSet = copiedCell.value.filter((v) =>
+            targetField.options?.some((opt) => opt.id === v || opt.label === v)
+          );
+        } else {
+          // Single value to array
+          const option = targetField.options.find(
+            (opt) => opt.id === copiedCell.value || opt.label === copiedCell.value
+          );
+          if (!option) return;
+          valueToSet = [option.id];
+        }
+      }
+      // Other incompatible types - don't paste
+      else {
+        return;
+      }
+    }
+
+    // Use handleCellEdit to update and emit for persistence
+    handleCellEdit({
+      rowId: selectedCell.rowId,
+      fieldId: selectedCell.fieldId,
+      value: valueToSet,
+    });
   };
 
   const handleFieldReorder = (fromIndex: number, toIndex: number) => {
@@ -783,6 +896,16 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   }, [selectedRows, lastSelectionAction, rows, onRowSelect]);
 
   const allSelected = processedRows.length > 0 && processedRows.every((r) => selectedRows.has(r.id));
+
+  // Keyboard shortcuts for table operations
+  useKeyboardShortcuts({
+    shortcuts: createTableShortcuts({
+      onCopy: handleCellCopy,
+      onPaste: handleCellPaste,
+      onEscape: () => setSelectedCell(null),
+    }),
+    enabled: true,
+  });
 
   return (
     <div

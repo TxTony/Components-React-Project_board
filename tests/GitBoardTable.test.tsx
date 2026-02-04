@@ -150,6 +150,83 @@ describe('GitBoardTable', () => {
     });
   });
 
+  describe('Cell Copy/Paste', () => {
+    it('copies cell value with Ctrl+C and pastes with Ctrl+V', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+
+      const testFields = [
+        { id: 'fld_text1', name: 'Text1', type: 'text' as const, visible: true },
+        { id: 'fld_text2', name: 'Text2', type: 'text' as const, visible: true },
+      ];
+      const testRows = [
+        { id: 'row_1', values: { fld_text1: 'Hello', fld_text2: 'World' } },
+      ];
+
+      const { container } = render(
+        <GitBoardTable fields={testFields} rows={testRows} onChange={onChange} />
+      );
+
+      // Click on first cell to select it
+      const sourceCell = screen.getByText('Hello');
+      await user.click(sourceCell);
+
+      // Verify cell is selected
+      let selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+
+      // Copy with Ctrl+C
+      await user.keyboard('{Control>}c{/Control}');
+
+      // Click on second cell to select it
+      const targetCell = screen.getByText('World');
+      await user.click(targetCell);
+
+      // Verify second cell is selected
+      selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+
+      // Paste with Ctrl+V
+      await user.keyboard('{Control>}v{/Control}');
+
+      // Verify onChange was called with the pasted value
+      expect(onChange).toHaveBeenCalled();
+      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+      const updatedRow = lastCall.find((r: { id: string }) => r.id === 'row_1');
+      expect(updatedRow.values.fld_text2).toBe('Hello');
+    });
+
+    it('clears cell selection with Escape key', async () => {
+      const user = userEvent.setup();
+
+      const testFields = [
+        { id: 'fld_text', name: 'Text', type: 'text' as const, visible: true },
+      ];
+      const testRows = [
+        { id: 'row_1', values: { fld_text: 'Test' } },
+      ];
+
+      const { container } = render(
+        <GitBoardTable fields={testFields} rows={testRows} />
+      );
+
+      // Click on cell to select it
+      const cell = screen.getByText('Test');
+      await user.click(cell);
+
+      // Verify cell is selected
+      let selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(1);
+
+      // Press Escape
+      await user.keyboard('{Escape}');
+
+      // Verify no cells are selected
+      selectedCells = container.querySelectorAll('.ring-2');
+      expect(selectedCells).toHaveLength(0);
+    });
+  });
+
   describe('Column Reordering', () => {
     it('columns are draggable with reorder handler', () => {
       const testFields = [
