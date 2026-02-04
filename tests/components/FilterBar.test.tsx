@@ -345,6 +345,65 @@ describe('FilterBar', () => {
       expect(lastCall[1].operator).toBe('contains');
       expect(lastCall[1].value).toBe('test');
     });
+
+    it('defaults to title:contains when no field is specified', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'login');
+
+      // Should parse as title:contains:login
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      expect(lastCall).toHaveLength(1);
+      expect(lastCall[0].field).toBe('fld_title_aa12e'); // Title field ID
+      expect(lastCall[0].operator).toBe('contains');
+      expect(lastCall[0].value).toBe('login');
+    });
+
+    it('defaults to title:contains for multiple plain text terms', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'login page');
+
+      // Should parse both "login" and "page" as separate title:contains filters
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      expect(lastCall).toHaveLength(2);
+      expect(lastCall[0].field).toBe('fld_title_aa12e');
+      expect(lastCall[0].operator).toBe('contains');
+      expect(lastCall[0].value).toBe('login');
+      expect(lastCall[1].field).toBe('fld_title_aa12e');
+      expect(lastCall[1].operator).toBe('contains');
+      expect(lastCall[1].value).toBe('page');
+    });
+
+    it('mixes plain text with explicit filters', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'login Status:equals:Done');
+
+      // Should parse "login" as title:contains:login and the explicit filter
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      expect(lastCall).toHaveLength(2);
+      expect(lastCall[0].field).toBe('fld_title_aa12e');
+      expect(lastCall[0].operator).toBe('contains');
+      expect(lastCall[0].value).toBe('login');
+      expect(lastCall[1].field).toBe('fld_status_c81f3');
+      expect(lastCall[1].operator).toBe('equals');
+    });
   });
 
   describe('Keyboard navigation', () => {

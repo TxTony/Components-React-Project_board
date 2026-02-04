@@ -153,11 +153,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       // Parse field:operator:value
       const parts = cleanStr.split(':');
-      if (parts.length < 2) continue;
 
-      const fieldName = parts[0];
-      const operatorPart = parts[1];
-      const valuePart = parts.slice(2).join(':'); // In case value contains ':'
+      let fieldName: string;
+      let operatorPart: string;
+      let valuePart: string;
+
+      if (parts.length < 2) {
+        // No colon found - default to title:contains:value
+        // Find the title field (by type or by name)
+        const titleField = fields.find(
+          (f) => f.type === 'title' || f.name.toLowerCase() === 'title'
+        );
+        if (!titleField) continue;
+
+        fieldName = titleField.name;
+        operatorPart = 'contains';
+        valuePart = cleanStr;
+      } else {
+        fieldName = parts[0];
+        operatorPart = parts[1];
+        valuePart = parts.slice(2).join(':'); // In case value contains ':'
+      }
 
       // Find matching field
       const field = fields.find(
@@ -506,7 +522,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onClick={handleClick}
-            placeholder="Filter (e.g., status:equals:done title:contains:login)"
+            placeholder="Filter (e.g., login → title:contains:login, status:equals:done)"
             className="gitboard-filter-bar__input"
             aria-label="Filter input"
           />
