@@ -1,6 +1,6 @@
 {
   "name": "@txtony/gitboard-table",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "A reusable GitHub-Projects-style table component, built with React + TypeScript, TailwindCSS, and theme support",
   "type": "module",
   "main": "./dist/index.cjs.js",
