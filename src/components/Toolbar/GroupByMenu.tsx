@@ -50,10 +50,13 @@ export const GroupByMenu: React.FC<GroupByMenuProps> = ({
   const groupableFields = fields.filter(
     (f) =>
       f.type === 'single-select' ||
+      f.type === 'multi-select' ||
       f.type === 'assignee' ||
       f.type === 'iteration' ||
       f.type === 'text' ||
-      f.type === 'title'
+      f.type === 'title' ||
+      f.type === 'link' ||
+      f.type === 'date'
   );
 
   return (
