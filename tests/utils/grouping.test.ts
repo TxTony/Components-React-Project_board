@@ -122,16 +122,15 @@ describe('Grouping Utilities', () => {
       expect(lastGroup.label).toBe('No Status');
     });
 
-    it('should sort groups alphabetically (excluding empty)', () => {
+    it('should sort groups by option order when field has options', () => {
       const groups = groupRows(mockRows, 'status', mockFields);
 
-      // Remove empty group for checking alphabetical order
+      // Remove empty group for checking option order
       const nonEmptyGroups = groups.filter((g) => g.id !== '__empty__');
 
       const labels = nonEmptyGroups.map((g) => g.label);
-      const sortedLabels = [...labels].sort();
-
-      expect(labels).toEqual(sortedLabels);
+      // Options are defined as: To Do, In Progress, Done - so groups should follow this order
+      expect(labels).toEqual(['To Do', 'In Progress', 'Done']);
     });
 
     it('should return single ungrouped group when field not found', () => {
@@ -143,10 +142,15 @@ describe('Grouping Utilities', () => {
       expect(groups[0].rows).toHaveLength(6);
     });
 
-    it('should handle empty rows array', () => {
+    it('should show all option groups even with empty rows array', () => {
       const groups = groupRows([], 'status', mockFields);
 
-      expect(groups).toHaveLength(0);
+      // Field has 3 options, so we should get 3 empty groups
+      expect(groups).toHaveLength(3);
+      expect(groups.every((g) => g.count === 0)).toBe(true);
+      expect(groups.every((g) => g.rows.length === 0)).toBe(true);
+      // Should maintain option order
+      expect(groups.map((g) => g.label)).toEqual(['To Do', 'In Progress', 'Done']);
     });
 
     it('should group by text field', () => {

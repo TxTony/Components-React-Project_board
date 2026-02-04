@@ -118,6 +118,20 @@ export function groupRows(
   // Create groups map
   const groupsMap = new Map<string, RowGroup>();
 
+  // Pre-populate groups from field options to show all groups even if empty
+  if (field.options && field.options.length > 0) {
+    for (const option of field.options) {
+      groupsMap.set(option.id, {
+        id: option.id,
+        label: option.label,
+        value: option.id,
+        rows: [],
+        count: 0,
+        collapsed: false,
+      });
+    }
+  }
+
   // Group rows
   for (const row of rows) {
     const value = row.values[groupByFieldId];
@@ -144,13 +158,28 @@ export function groupRows(
   const groups = Array.from(groupsMap.values());
 
   // Sort groups:
-  // 1. Empty group last
-  // 2. Others alphabetically by label
-  groups.sort((a, b) => {
-    if (a.id === '__empty__') return 1;
-    if (b.id === '__empty__') return -1;
-    return a.label.localeCompare(b.label);
-  });
+  // - If field has options, preserve option order
+  // - Empty group always last
+  // - Others alphabetically by label
+  if (field.options && field.options.length > 0) {
+    const optionOrder = new Map(field.options.map((opt, idx) => [opt.id, idx]));
+    groups.sort((a, b) => {
+      if (a.id === '__empty__') return 1;
+      if (b.id === '__empty__') return -1;
+      const orderA = optionOrder.get(a.id);
+      const orderB = optionOrder.get(b.id);
+      if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
+      if (orderA !== undefined) return -1;
+      if (orderB !== undefined) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  } else {
+    groups.sort((a, b) => {
+      if (a.id === '__empty__') return 1;
+      if (b.id === '__empty__') return -1;
+      return a.label.localeCompare(b.label);
+    });
+  }
 
   return groups;
 }
