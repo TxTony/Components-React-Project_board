@@ -3,7 +3,7 @@
  * Context menu for row actions (show, delete, and custom actions)
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import type { Row, CustomAction } from '@/types';
 
 export interface RowContextMenuProps {
@@ -29,6 +29,27 @@ export const RowContextMenu: React.FC<RowContextMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [adjustedPosition, setAdjustedPosition] = useState(position);
+
+  // Adjust position based on viewport - if cursor is below center, open menu above cursor
+  // Use useLayoutEffect for synchronous measurement before paint
+  useLayoutEffect(() => {
+    if (!menuRef.current) return;
+
+    const viewportHeight = window.innerHeight;
+    const viewportCenterY = viewportHeight / 2;
+    const isBelowCenter = position.y > viewportCenterY;
+
+    if (isBelowCenter) {
+      const menuHeight = menuRef.current.offsetHeight;
+      setAdjustedPosition({
+        x: position.x,
+        y: position.y - menuHeight,
+      });
+    } else {
+      setAdjustedPosition(position);
+    }
+  }, [position, showDeleteConfirm]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,10 +68,15 @@ export const RowContextMenu: React.FC<RowContextMenuProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Delay adding mousedown listener to avoid catching the initial right-click
+    // that triggered the context menu
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
@@ -89,7 +115,7 @@ export const RowContextMenu: React.FC<RowContextMenuProps> = ({
       <div
         ref={menuRef}
         className="gitboard-context-menu fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg p-4 min-w-[240px]"
-        style={{ top: position.y, left: position.x }}
+        style={{ top: adjustedPosition.y, left: adjustedPosition.x }}
         role="dialog"
         aria-labelledby="delete-confirm-title"
       >
@@ -124,7 +150,7 @@ export const RowContextMenu: React.FC<RowContextMenuProps> = ({
     <div
       ref={menuRef}
       className="gitboard-context-menu fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[180px]"
-      style={{ top: position.y, left: position.x }}
+      style={{ top: adjustedPosition.y, left: adjustedPosition.x }}
       role="menu"
     >
       {/* Show action */}

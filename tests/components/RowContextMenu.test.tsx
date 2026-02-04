@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { RowContextMenu } from '../../src/components/Table/Menu/RowContextMenu';
 import type { Row, CustomAction } from '../../src/types';
 
@@ -334,6 +334,11 @@ describe('RowContextMenu', () => {
         </div>
       );
 
+      // Wait for the mousedown listener to be attached (setTimeout 0 in component)
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      });
+
       const outside = screen.getByTestId('outside');
       fireEvent.mouseDown(outside);
 
@@ -342,9 +347,14 @@ describe('RowContextMenu', () => {
       });
     });
 
-    it('should not call onClose when clicking inside the menu', () => {
+    it('should not call onClose when clicking inside the menu', async () => {
       const onClose = vi.fn();
       const { container } = render(<RowContextMenu {...defaultProps} onClose={onClose} />);
+
+      // Wait for the mousedown listener to be attached (setTimeout 0 in component)
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      });
 
       const menu = container.querySelector('.gitboard-context-menu');
       fireEvent.mouseDown(menu!);
