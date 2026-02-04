@@ -358,30 +358,91 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           }
         }
       }
-    } else if (token.colonCount === 2) {
-      // Suggesting value
+    } else if (token.colonCount >= 2) {
+      // Suggesting value (supports multiple values for 'in' operator)
       const parts = token.beforeCursor.split(':');
       const fieldName = parts[0];
-      const valueSearch = parts[2]?.toLowerCase() || '';
+      const operator = parts[1]?.toLowerCase() || '';
+      const fullValuePart = parts.slice(2).join(':'); // Everything after field:operator:
 
       const field = fields.find(
         (f) => f.name.toLowerCase() === fieldName.toLowerCase()
       );
 
       if (field && field.options) {
+        // For 'in' operator, handle comma-separated values
+        let currentSearch = '';
+        let alreadySelectedValues: string[] = [];
+
+        if (operator === 'in') {
+          // Parse existing values to exclude from suggestions
+          const valueParts: string[] = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let i = 0; i < fullValuePart.length; i++) {
+            const char = fullValuePart[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+              current += char;
+            } else if (char === ',' && !inQuotes) {
+              if (current.trim()) {
+                valueParts.push(current.trim().replace(/^"(.*)"$/, '$1'));
+              }
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+
+          // The last part (after last comma) is what user is currently typing
+          currentSearch = current.trim().replace(/^"/, '').toLowerCase();
+          alreadySelectedValues = valueParts.map(v => v.toLowerCase());
+        } else {
+          currentSearch = fullValuePart.toLowerCase();
+        }
+
         // For select fields, suggest option values
         for (const option of field.options) {
           const labelLower = option.label.toLowerCase();
+
+          // Skip already selected values (for 'in' operator)
+          if (alreadySelectedValues.includes(labelLower)) {
+            continue;
+          }
+
           // Match if label starts with search term
-          if (labelLower.startsWith(valueSearch) ||
+          if (currentSearch === '' ||
+              labelLower.startsWith(currentSearch) ||
               // Or if any word in the label starts with search term
-              labelLower.split(' ').some(word => word.startsWith(valueSearch))) {
+              labelLower.split(' ').some(word => word.startsWith(currentSearch))) {
             suggestions.push({
               type: 'value',
               value: option.label,
               label: option.label,
               description: option.description,
             });
+          }
+        }
+
+        // For 'in' operator, also suggest "(empty)" to filter empty values
+        if (operator === 'in') {
+          const emptyValue = '(empty)';
+          const emptyLower = emptyValue.toLowerCase();
+
+          // Skip if already selected
+          if (!alreadySelectedValues.includes(emptyLower)) {
+            // Match if search term matches "(empty)" or "empty"
+            if (currentSearch === '' ||
+                emptyLower.startsWith(currentSearch) ||
+                'empty'.startsWith(currentSearch)) {
+              suggestions.push({
+                type: 'value',
+                value: emptyValue,
+                label: emptyValue,
+                description: 'Match rows with empty/missing values',
+              });
+            }
           }
         }
       }
@@ -430,9 +491,34 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       const parts = token.beforeCursor.split(':');
       const fieldName = parts[0];
       const operator = parts[1];
-      // Add quotes if value contains spaces
-      const quotedValue = suggestion.value.includes(' ') ? `"${suggestion.value}"` : suggestion.value;
-      newValue = `${before}${token.isNegative ? '-' : ''}${fieldName}:${operator}:${quotedValue}${after}`;
+      const fullValuePart = parts.slice(2).join(':');
+
+      // Add quotes if value contains spaces or commas
+      const quotedValue = (suggestion.value.includes(' ') || suggestion.value.includes(','))
+        ? `"${suggestion.value}"`
+        : suggestion.value;
+
+      // For 'in' operator, preserve existing values and append new one
+      if (operator.toLowerCase() === 'in' && fullValuePart.includes(',')) {
+        // Find the last comma position to preserve existing values
+        let lastCommaIndex = -1;
+        let inQuotes = false;
+
+        for (let i = 0; i < fullValuePart.length; i++) {
+          const char = fullValuePart[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            lastCommaIndex = i;
+          }
+        }
+
+        // Keep everything up to and including the last comma
+        const existingValues = fullValuePart.slice(0, lastCommaIndex + 1);
+        newValue = `${before}${token.isNegative ? '-' : ''}${fieldName}:${operator}:${existingValues}${quotedValue}${after}`;
+      } else {
+        newValue = `${before}${token.isNegative ? '-' : ''}${fieldName}:${operator}:${quotedValue}${after}`;
+      }
     }
 
     setInputValue(newValue);

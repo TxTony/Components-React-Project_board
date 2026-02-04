@@ -175,6 +175,147 @@ describe('FilterBar', () => {
       const todoSuggestion = screen.queryByText('Todo');
       expect(todoSuggestion).not.toBeInTheDocument();
     });
+
+    it('shows suggestions for second value after comma in "in" operator', async () => {
+      const user = userEvent.setup();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={() => {}} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:Done,');
+
+      // Should show remaining options (not "Done" since it's already selected)
+      const todoSuggestion = await screen.findByText('Todo');
+      expect(todoSuggestion).toBeInTheDocument();
+
+      const progressSuggestion = await screen.findByText('In Progress');
+      expect(progressSuggestion).toBeInTheDocument();
+
+      // "Done" should NOT be in suggestions since it's already selected
+      const doneSuggestion = screen.queryByRole('option', { name: /Done/i });
+      expect(doneSuggestion).not.toBeInTheDocument();
+    });
+
+    it('filters suggestions for second value based on partial input', async () => {
+      const user = userEvent.setup();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={() => {}} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:Done,To');
+
+      // Should show "Todo" matching the partial input
+      const todoSuggestion = await screen.findByText('Todo');
+      expect(todoSuggestion).toBeInTheDocument();
+
+      // "In Progress" should not match
+      const progressSuggestion = screen.queryByText('In Progress');
+      expect(progressSuggestion).not.toBeInTheDocument();
+    });
+
+    it('applies second value suggestion preserving first value', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:Done,');
+
+      // Click on "Todo" suggestion
+      const todoSuggestion = await screen.findByText('Todo');
+      await user.click(todoSuggestion);
+
+      // Input should have both values
+      expect(input).toHaveValue('Status:in:Done,Todo');
+
+      // Filter should have both values
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall[0].operator).toBe('in');
+      expect(lastCall[0].value).toEqual(['Done', 'Todo']);
+    });
+
+    it('handles quoted values in multi-value suggestions', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:Done,');
+
+      // Click on "In Progress" (which has a space and needs quoting)
+      const progressSuggestion = await screen.findByText('In Progress');
+      await user.click(progressSuggestion);
+
+      // Input should have quoted value
+      expect(input).toHaveValue('Status:in:Done,"In Progress"');
+    });
+
+    it('shows (empty) as a suggestion for "in" operator', async () => {
+      const user = userEvent.setup();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={() => {}} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:');
+
+      // Should show "(empty)" as a suggestion
+      const emptySuggestion = await screen.findByText('(empty)');
+      expect(emptySuggestion).toBeInTheDocument();
+
+      // Should show description
+      const description = screen.getByText('Match rows with empty/missing values');
+      expect(description).toBeInTheDocument();
+    });
+
+    it('filters (empty) suggestion based on partial input', async () => {
+      const user = userEvent.setup();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={() => {}} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:emp');
+
+      // Should show "(empty)" matching "emp"
+      const emptySuggestion = await screen.findByText('(empty)');
+      expect(emptySuggestion).toBeInTheDocument();
+
+      // Should not show other options that don't match
+      const todoSuggestion = screen.queryByText('Todo');
+      expect(todoSuggestion).not.toBeInTheDocument();
+    });
+
+    it('applies (empty) suggestion correctly', async () => {
+      const user = userEvent.setup();
+      const onFiltersChange = vi.fn();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={onFiltersChange} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:Done,');
+
+      // Click on "(empty)" suggestion
+      const emptySuggestion = await screen.findByText('(empty)');
+      await user.click(emptySuggestion);
+
+      // Input should have both values
+      expect(input).toHaveValue('Status:in:Done,(empty)');
+
+      // Filter should have both values
+      const calls = onFiltersChange.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall[0].value).toEqual(['Done', '(empty)']);
+    });
+
+    it('excludes (empty) from suggestions when already selected', async () => {
+      const user = userEvent.setup();
+      render(<FilterBar fields={fields} filters={[]} onFiltersChange={() => {}} />);
+
+      const input = screen.getByRole('textbox', { name: /filter input/i });
+      await user.type(input, 'Status:in:(empty),');
+
+      // "(empty)" should NOT be in suggestions since it's already selected
+      // Wait for other suggestions to appear first
+      await screen.findByText('Todo');
+
+      const emptySuggestion = screen.queryByText('(empty)');
+      expect(emptySuggestion).not.toBeInTheDocument();
+    });
   });
 
   describe('Filter parsing', () => {
