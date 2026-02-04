@@ -825,11 +825,38 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   }, [initialViewsKey, tableId]); // Only re-run when the stringified views actually change
 
   // Set currentView when views array changes and currentView is null
+  // Also apply the view's configuration (groupBy, filters, sortBy, columns)
   useEffect(() => {
     if (views.length > 0 && !currentView) {
-      setCurrentView(views[0]);
+      const viewToApply = views[0];
+      if (!viewToApply) return;
+
+      setCurrentView(viewToApply);
+
+      // Apply view's groupBy configuration
+      if (viewToApply.groupBy !== undefined) {
+        setGroupBy(viewToApply.groupBy);
+      }
+
+      // Apply view's filters
+      if (viewToApply.filters) {
+        setFilters(viewToApply.filters);
+      }
+
+      // Apply view's sort configuration
+      if (viewToApply.sortBy !== undefined) {
+        setSortConfig(viewToApply.sortBy);
+      }
+
+      // Apply view's column visibility
+      if (viewToApply.columns && viewToApply.columns.length > 0) {
+        const allFieldIds = fields.map(f => f.id);
+        const fieldsToHide = allFieldIds.filter(fieldId => !viewToApply.columns.includes(fieldId));
+        setHiddenColumns(new Set(fieldsToHide));
+        setFieldOrder(viewToApply.columns);
+      }
     }
-  }, [views, currentView]);
+  }, [views, currentView, fields]);
 
   // Reorder fields based on fieldOrder state and apply widths and visibility
   const orderedFields = useMemo(() => {
