@@ -118,6 +118,7 @@ export type {
   BulkUpdateTarget,
   RowReorderEvent,
   RowSelectionEvent,
+  GroupByChangeEvent,
 } from './types';
 
 // Export mock data for testing/development

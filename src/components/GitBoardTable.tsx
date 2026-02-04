@@ -17,7 +17,7 @@ import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { groupRows } from '../utils/grouping';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent } from '@/types';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent, GroupByChangeEvent } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -47,6 +47,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   loadingMessage,
   customActions = [],
   onContextMenuClick,
+  onGroupByChange,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -591,6 +592,20 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   };
 
+  const handleGroupByChange = (fieldId: string | null) => {
+    setGroupBy(fieldId);
+
+    // Emit the onGroupByChange event
+    if (onGroupByChange) {
+      const field = fieldId ? fields.find((f) => f.id === fieldId) || null : null;
+      const event: GroupByChangeEvent = {
+        fieldId,
+        field,
+      };
+      onGroupByChange(event);
+    }
+  };
+
   const handleViewChange = (view: ViewConfig) => {
     // Update current view
     setCurrentView(view);
@@ -799,7 +814,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
         onDeleteSelected={handleDeleteSelected}
         fields={orderedFields}
         currentGroupBy={groupBy}
-        onGroupByChange={setGroupBy}
+        onGroupByChange={handleGroupByChange}
       />
       {filters.length > 0 ? (
         <div className="gitboard-table__stats">

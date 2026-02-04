@@ -203,6 +203,9 @@ export interface GitBoardTableProps {
   // Context menu props
   customActions?: CustomAction[];  // Custom actions to show in row context menu
   onContextMenuClick?: (event: ContextMenuClickEvent) => void;  // Called when custom action is clicked
+
+  // Group by props
+  onGroupByChange?: (event: GroupByChangeEvent) => void;  // Called when group by changes
 }
 
 /**
@@ -295,4 +298,12 @@ export interface ContextMenuClickEvent {
   type: 'context-menu-click';
   actionName: string;  // Name of the custom action clicked
   row: Row;            // The row that the action was performed on
+}
+
+/**
+ * Group by change event
+ */
+export interface GroupByChangeEvent {
+  fieldId: UID | null;  // The field ID to group by, or null if grouping is removed
+  field: FieldDefinition | null;  // The field definition, or null if grouping is removed
 }
