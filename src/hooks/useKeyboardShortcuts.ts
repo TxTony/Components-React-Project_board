@@ -28,6 +28,10 @@ export const useKeyboardShortcuts = ({
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't intercept shortcuts when the user is typing in an input or textarea
+      const target = event.target as HTMLElement;
+      const isEditing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
       for (const shortcut of shortcuts) {
         const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase();
         const ctrlMatch = shortcut.ctrl === undefined || event.ctrlKey === shortcut.ctrl;
@@ -36,6 +40,8 @@ export const useKeyboardShortcuts = ({
         const metaMatch = shortcut.meta === undefined || event.metaKey === shortcut.meta;
 
         if (keyMatch && ctrlMatch && shiftMatch && altMatch && metaMatch) {
+          // Let native browser behavior handle input fields (paste, copy, select all, etc.)
+          if (isEditing) break;
           event.preventDefault();
           shortcut.handler(event);
           break;
