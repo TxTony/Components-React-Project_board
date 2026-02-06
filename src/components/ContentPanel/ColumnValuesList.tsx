@@ -39,6 +39,13 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
         finalValue = editValue ? parseFloat(editValue) : null;
       } else if (field?.type === 'date') {
         finalValue = editValue || null;
+      } else if (field?.type === 'link') {
+        const trimmed = editValue.trim();
+        if (trimmed && !trimmed.match(/^https?:\/\//i)) {
+          finalValue = `https://${trimmed}`;
+        } else {
+          finalValue = trimmed || null;
+        }
       }
 
       onValueChange(fieldId, finalValue);
@@ -141,22 +148,110 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
     // Multi-select field
     if (field.type === 'multi-select') {
       const selectedValues = Array.isArray(value) ? value : [];
-      const selectedLabels = selectedValues
-        .map((v: string) => field.options?.find((opt: FieldOption) => opt.id === v)?.label)
-        .filter(Boolean)
-        .join(', ');
 
       return (
         <div className="gitboard-column-value__display flex-1 px-2 py-1 text-sm">
-          {selectedLabels || <span className="text-gray-400 italic">None selected</span>}
+          <div className="flex flex-wrap gap-1 mb-1">
+            {selectedValues.length > 0 ? (
+              selectedValues.map((v: string) => {
+                const opt = field.options?.find((o: FieldOption) => o.id === v);
+                if (!opt) return null;
+
+                const hexToRgba = (hex: string, alpha: number) => {
+                  const r = parseInt(hex.slice(1, 3), 16);
+                  const g = parseInt(hex.slice(3, 5), 16);
+                  const b = parseInt(hex.slice(5, 7), 16);
+                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                };
+
+                return (
+                  <span
+                    key={opt.id}
+                    className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
+                    style={opt.color ? {
+                      backgroundColor: hexToRgba(opt.color, 0.1),
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid',
+                      borderColor: opt.color,
+                      color: opt.color,
+                    } : undefined}
+                  >
+                    {opt.label}
+                  </span>
+                );
+              })
+            ) : (
+              <span className="text-gray-400 italic">None selected</span>
+            )}
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {field.options?.map((option: FieldOption) => {
+              const isSelected = selectedValues.includes(option.id);
+              return (
+                <label
+                  key={option.id}
+                  className="flex items-center gap-2 px-1 py-0.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {
+                      const newValues = isSelected
+                        ? selectedValues.filter((id: string) => id !== option.id)
+                        : [...selectedValues, option.id];
+                      if (onValueChange) {
+                        onValueChange(field.id, newValues.length > 0 ? newValues : null);
+                      }
+                    }}
+                    className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
       );
     }
 
     // Assignee field
     if (field.type === 'assignee') {
+      if (field.options && field.options.length > 0) {
+        return (
+          <select
+            value={value as string || ''}
+            onChange={(e) => handleSelectChange(field.id, e.target.value)}
+            className="gitboard-column-value__select flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Unassigned</option>
+            {field.options.map((option: FieldOption) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      }
+      // Fallback to text input when no options defined
+      if (isEditing) {
+        return (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => handleSaveEdit(field.id)}
+            onKeyDown={(e) => handleKeyDown(e, field.id)}
+            className="gitboard-column-value__input flex-1 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter assignee..."
+            autoFocus
+          />
+        );
+      }
       return (
-        <div className="gitboard-column-value__display flex-1 px-2 py-1 text-sm">
+        <div
+          onClick={() => handleStartEdit(field)}
+          className="gitboard-column-value__display flex-1 px-2 py-1 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+        >
           {value || <span className="text-gray-400 italic">Unassigned</span>}
         </div>
       );
@@ -164,9 +259,81 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
 
     // Iteration field
     if (field.type === 'iteration') {
+      if (field.options && field.options.length > 0) {
+        return (
+          <select
+            value={value as string || ''}
+            onChange={(e) => handleSelectChange(field.id, e.target.value)}
+            className="gitboard-column-value__select flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">No iteration</option>
+            {field.options.map((option: FieldOption) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      }
+      // Fallback to text input when no options defined
+      if (isEditing) {
+        return (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => handleSaveEdit(field.id)}
+            onKeyDown={(e) => handleKeyDown(e, field.id)}
+            className="gitboard-column-value__input flex-1 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter iteration..."
+            autoFocus
+          />
+        );
+      }
       return (
-        <div className="gitboard-column-value__display flex-1 px-2 py-1 text-sm">
+        <div
+          onClick={() => handleStartEdit(field)}
+          className="gitboard-column-value__display flex-1 px-2 py-1 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+        >
           {value || <span className="text-gray-400 italic">No iteration</span>}
+        </div>
+      );
+    }
+
+    // Link field
+    if (field.type === 'link') {
+      if (isEditing) {
+        return (
+          <input
+            type="url"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => handleSaveEdit(field.id)}
+            onKeyDown={(e) => handleKeyDown(e, field.id)}
+            className="gitboard-column-value__input flex-1 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="https://example.com"
+            autoFocus
+          />
+        );
+      }
+      return (
+        <div
+          onClick={() => handleStartEdit(field)}
+          className="gitboard-column-value__display flex-1 px-2 py-1 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+        >
+          {value ? (
+            <a
+              href={value.toString()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {value.toString()}
+            </a>
+          ) : (
+            <span className="text-gray-400 italic">No link</span>
+          )}
         </div>
       );
     }
