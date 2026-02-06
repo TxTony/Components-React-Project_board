@@ -91,6 +91,11 @@ function matchesFilter(
     }
   }
 
+  // For 'not-equals', empty values ARE not equal to the filter value
+  if (isEmpty(value) && filter.operator === 'not-equals') {
+    return true;
+  }
+
   // For other operators, if value is empty, no match
   if (isEmpty(value)) {
     return false;
@@ -299,7 +304,7 @@ export function applyAllFilters(
 
 /**
  * Extract auto-fill values from active filters for new row creation
- * Only processes filters with operators: 'equals', 'contains'
+ * Only processes filters with operator: 'equals'
  * If multiple filters exist for same field, uses the first one
  */
 export function extractAutoFillValues(
@@ -309,8 +314,8 @@ export function extractAutoFillValues(
   const autoFillValues: Record<string, CellValue> = {};
   const processedFields = new Set<string>();
 
-  // Operators that should trigger auto-fill
-  const autoFillOperators = ['equals', 'contains'];
+  // Only 'equals' operator should trigger auto-fill
+  const autoFillOperators = ['equals'];
 
   for (const filter of filters) {
     // Skip if field already processed (use first filter only)
@@ -379,32 +384,19 @@ export function extractAutoFillValues(
         break;
 
       case 'multi-select':
-        // For 'equals' operator, value might be an ID
-        // For 'contains' operator, the value is a label string
-        // For multi-select, we add it to an array
+        // For 'equals' operator, value might be an ID or label
         if (field.options) {
-          if (filter.operator === 'equals') {
-            // Check if value is already an option ID
-            const optionById = field.options.find((opt) => opt.id === filter.value);
-            if (optionById) {
-              autoFillValues[filter.field] = [filter.value as string];
-            } else {
-              // Try to find by label
-              const optionByLabel = field.options.find(
-                (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
-              );
-              if (optionByLabel) {
-                autoFillValues[filter.field] = [optionByLabel.id];
-              }
-            }
+          // Check if value is already an option ID
+          const optionById = field.options.find((opt) => opt.id === filter.value);
+          if (optionById) {
+            autoFillValues[filter.field] = [filter.value as string];
           } else {
-            // For 'contains', value is a label string
-            const option = field.options.find(
+            // Try to find by label
+            const optionByLabel = field.options.find(
               (opt) => opt.label.toLowerCase() === String(filter.value).toLowerCase()
             );
-            if (option) {
-              // For multi-select, value should be an array of IDs
-              autoFillValues[filter.field] = [option.id];
+            if (optionByLabel) {
+              autoFillValues[filter.field] = [optionByLabel.id];
             }
           }
         }
