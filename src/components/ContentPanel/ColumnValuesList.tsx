@@ -4,8 +4,15 @@
  * Shows in the detail panel to provide quick access to all fields
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { Row, FieldDefinition, FieldOption, CellValue } from '@/types';
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 export interface ColumnValuesListProps {
   row: Row;
@@ -20,8 +27,30 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
 }) => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const visibleFields = fields.filter(f => f.visible);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openDropdown && dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+        setSearchQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdown]);
+
+  const filterOptions = useCallback((options: FieldOption[] | undefined, query: string) => {
+    if (!options) return [];
+    if (!query) return options;
+    const lower = query.toLowerCase();
+    return options.filter(o => o.label.toLowerCase().includes(lower));
+  }, []);
 
   const handleStartEdit = useCallback((field: FieldDefinition) => {
     const currentValue = row.values[field.id];
@@ -129,87 +158,202 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
 
     // Single-select field
     if (field.type === 'single-select') {
+      const isOpen = openDropdown === field.id;
+      const selectedOption = field.options?.find((o: FieldOption) => o.id === value);
+      const filtered = filterOptions(field.options, isOpen ? searchQuery : '');
+
       return (
-        <select
-          value={value as string || ''}
-          onChange={(e) => handleSelectChange(field.id, e.target.value)}
-          className="gitboard-column-value__select flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Select...</option>
-          {field.options?.map((option: FieldOption) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex-1 relative" ref={isOpen ? dropdownRef : undefined}>
+          <div
+            onClick={() => {
+              setOpenDropdown(isOpen ? null : field.id);
+              setSearchQuery('');
+            }}
+            className="gitboard-column-value__display flex items-center justify-between px-2 py-1 text-sm cursor-pointer border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 hover:border-blue-500"
+          >
+            {selectedOption ? (
+              <span
+                className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
+                style={selectedOption.color ? {
+                  backgroundColor: hexToRgba(selectedOption.color, 0.1),
+                  borderWidth: '1.5px', borderStyle: 'solid',
+                  borderColor: selectedOption.color, color: selectedOption.color,
+                } : undefined}
+              >
+                {selectedOption.label}
+              </span>
+            ) : (
+              <span className="text-gray-400">Select...</span>
+            )}
+            <svg className="w-3 h-3 text-gray-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          {isOpen && (
+            <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+              <div className="p-1.5">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') { setOpenDropdown(null); setSearchQuery(''); }
+                  }}
+                />
+              </div>
+              <div className="max-h-[180px] overflow-y-auto">
+                <div
+                  className="px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                  onClick={() => { handleSelectChange(field.id, ''); setOpenDropdown(null); setSearchQuery(''); }}
+                >
+                  Clear selection
+                </div>
+                {filtered.map((option: FieldOption) => (
+                  <div
+                    key={option.id}
+                    className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${value === option.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                    onClick={() => { handleSelectChange(field.id, option.id); setOpenDropdown(null); setSearchQuery(''); }}
+                  >
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
+                      style={option.color ? {
+                        backgroundColor: hexToRgba(option.color, 0.1),
+                        borderWidth: '1.5px', borderStyle: 'solid',
+                        borderColor: option.color, color: option.color,
+                      } : undefined}
+                    >
+                      {option.label}
+                    </span>
+                    {value === option.id && (
+                      <svg className="w-3.5 h-3.5 text-blue-600 ml-auto flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                ))}
+                {filtered.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-gray-400 italic">No matches</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       );
     }
 
     // Multi-select field
     if (field.type === 'multi-select') {
       const selectedValues = Array.isArray(value) ? value : [];
+      const isOpen = openDropdown === field.id;
+      const filtered = filterOptions(field.options, isOpen ? searchQuery : '');
 
       return (
-        <div className="gitboard-column-value__display flex-1 px-2 py-1 text-sm">
-          <div className="flex flex-wrap gap-1 mb-1">
-            {selectedValues.length > 0 ? (
-              selectedValues.map((v: string) => {
-                const opt = field.options?.find((o: FieldOption) => o.id === v);
-                if (!opt) return null;
-
-                const hexToRgba = (hex: string, alpha: number) => {
-                  const r = parseInt(hex.slice(1, 3), 16);
-                  const g = parseInt(hex.slice(3, 5), 16);
-                  const b = parseInt(hex.slice(5, 7), 16);
-                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                };
-
-                return (
-                  <span
-                    key={opt.id}
-                    className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
-                    style={opt.color ? {
-                      backgroundColor: hexToRgba(opt.color, 0.1),
-                      borderWidth: '1.5px',
-                      borderStyle: 'solid',
-                      borderColor: opt.color,
-                      color: opt.color,
-                    } : undefined}
-                  >
-                    {opt.label}
-                  </span>
-                );
-              })
-            ) : (
-              <span className="text-gray-400 italic">None selected</span>
-            )}
+        <div className="flex-1 relative" ref={isOpen ? dropdownRef : undefined}>
+          <div
+            onClick={() => {
+              setOpenDropdown(isOpen ? null : field.id);
+              setSearchQuery('');
+            }}
+            className="gitboard-column-value__display flex items-center justify-between px-2 py-1 text-sm cursor-pointer border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 hover:border-blue-500 min-h-[30px]"
+          >
+            <div className="flex flex-wrap gap-1 flex-1">
+              {selectedValues.length > 0 ? (
+                selectedValues.map((v: string) => {
+                  const opt = field.options?.find((o: FieldOption) => o.id === v);
+                  if (!opt) return null;
+                  return (
+                    <span
+                      key={opt.id}
+                      className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
+                      style={opt.color ? {
+                        backgroundColor: hexToRgba(opt.color, 0.1),
+                        borderWidth: '1.5px', borderStyle: 'solid',
+                        borderColor: opt.color, color: opt.color,
+                      } : undefined}
+                    >
+                      {opt.label}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-gray-400">None selected</span>
+              )}
+            </div>
+            <svg className="w-3 h-3 text-gray-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div className="mt-1 space-y-0.5">
-            {field.options?.map((option: FieldOption) => {
-              const isSelected = selectedValues.includes(option.id);
-              return (
-                <label
-                  key={option.id}
-                  className="flex items-center gap-2 px-1 py-0.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => {
-                      const newValues = isSelected
-                        ? selectedValues.filter((id: string) => id !== option.id)
-                        : [...selectedValues, option.id];
-                      if (onValueChange) {
-                        onValueChange(field.id, newValues.length > 0 ? newValues : null);
-                      }
+          {isOpen && (
+            <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+              <div className="p-1.5">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') { setOpenDropdown(null); setSearchQuery(''); }
+                  }}
+                />
+              </div>
+              <div className="max-h-[180px] overflow-y-auto">
+                {selectedValues.length > 0 && (
+                  <div
+                    className="px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                    onClick={() => {
+                      if (onValueChange) onValueChange(field.id, null);
                     }}
-                    className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="text-xs text-gray-700 dark:text-gray-300">{option.label}</span>
-                </label>
-              );
-            })}
-          </div>
+                  >
+                    Clear all
+                  </div>
+                )}
+                {filtered.map((option: FieldOption) => {
+                  const isSelected = selectedValues.includes(option.id);
+                  return (
+                    <label
+                      key={option.id}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          const newValues = isSelected
+                            ? selectedValues.filter((id: string) => id !== option.id)
+                            : [...selectedValues, option.id];
+                          if (onValueChange) {
+                            onValueChange(field.id, newValues.length > 0 ? newValues : null);
+                          }
+                        }}
+                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0"
+                      />
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md"
+                        style={option.color ? {
+                          backgroundColor: hexToRgba(option.color, 0.1),
+                          borderWidth: '1.5px', borderStyle: 'solid',
+                          borderColor: option.color, color: option.color,
+                        } : undefined}
+                      >
+                        {option.label}
+                      </span>
+                    </label>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-gray-400 italic">No matches</div>
+                )}
+              </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-500">
+                {selectedValues.length} selected
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -217,19 +361,69 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
     // Assignee field
     if (field.type === 'assignee') {
       if (field.options && field.options.length > 0) {
+        const isOpen = openDropdown === field.id;
+        const selectedOption = field.options.find((o: FieldOption) => o.id === value);
+        const filtered = filterOptions(field.options, isOpen ? searchQuery : '');
+
         return (
-          <select
-            value={value as string || ''}
-            onChange={(e) => handleSelectChange(field.id, e.target.value)}
-            className="gitboard-column-value__select flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Unassigned</option>
-            {field.options.map((option: FieldOption) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 relative" ref={isOpen ? dropdownRef : undefined}>
+            <div
+              onClick={() => {
+                setOpenDropdown(isOpen ? null : field.id);
+                setSearchQuery('');
+              }}
+              className="gitboard-column-value__display flex items-center justify-between px-2 py-1 text-sm cursor-pointer border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 hover:border-blue-500"
+            >
+              <span className={selectedOption ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}>
+                {selectedOption?.label || 'Unassigned'}
+              </span>
+              <svg className="w-3 h-3 text-gray-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {isOpen && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                <div className="p-1.5">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setOpenDropdown(null); setSearchQuery(''); }
+                    }}
+                  />
+                </div>
+                <div className="max-h-[180px] overflow-y-auto">
+                  <div
+                    className="px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                    onClick={() => { handleSelectChange(field.id, ''); setOpenDropdown(null); setSearchQuery(''); }}
+                  >
+                    Clear selection
+                  </div>
+                  {filtered.map((option: FieldOption) => (
+                    <div
+                      key={option.id}
+                      className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${value === option.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                      onClick={() => { handleSelectChange(field.id, option.id); setOpenDropdown(null); setSearchQuery(''); }}
+                    >
+                      <span className="text-gray-900 dark:text-gray-100">{option.label}</span>
+                      {value === option.id && (
+                        <svg className="w-3.5 h-3.5 text-blue-600 ml-auto flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  ))}
+                  {filtered.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-gray-400 italic">No matches</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         );
       }
       // Fallback to text input when no options defined
@@ -260,19 +454,72 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
     // Iteration field
     if (field.type === 'iteration') {
       if (field.options && field.options.length > 0) {
+        const isOpen = openDropdown === field.id;
+        const selectedOption = field.options.find((o: FieldOption) => o.id === value);
+        const filtered = filterOptions(field.options, isOpen ? searchQuery : '');
+
         return (
-          <select
-            value={value as string || ''}
-            onChange={(e) => handleSelectChange(field.id, e.target.value)}
-            className="gitboard-column-value__select flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">No iteration</option>
-            {field.options.map((option: FieldOption) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 relative" ref={isOpen ? dropdownRef : undefined}>
+            <div
+              onClick={() => {
+                setOpenDropdown(isOpen ? null : field.id);
+                setSearchQuery('');
+              }}
+              className="gitboard-column-value__display flex items-center justify-between px-2 py-1 text-sm cursor-pointer border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 hover:border-blue-500"
+            >
+              <span className={selectedOption ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}>
+                {selectedOption?.label || 'No iteration'}
+              </span>
+              <svg className="w-3 h-3 text-gray-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {isOpen && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                <div className="p-1.5">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setOpenDropdown(null); setSearchQuery(''); }
+                    }}
+                  />
+                </div>
+                <div className="max-h-[180px] overflow-y-auto">
+                  <div
+                    className="px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                    onClick={() => { handleSelectChange(field.id, ''); setOpenDropdown(null); setSearchQuery(''); }}
+                  >
+                    Clear selection
+                  </div>
+                  {filtered.map((option: FieldOption) => (
+                    <div
+                      key={option.id}
+                      className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${value === option.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                      onClick={() => { handleSelectChange(field.id, option.id); setOpenDropdown(null); setSearchQuery(''); }}
+                    >
+                      <span className="text-gray-900 dark:text-gray-100">{option.label}</span>
+                      {option.description && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{option.description}</span>
+                      )}
+                      {value === option.id && (
+                        <svg className="w-3.5 h-3.5 text-blue-600 ml-auto flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  ))}
+                  {filtered.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-gray-400 italic">No matches</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         );
       }
       // Fallback to text input when no options defined
