@@ -47,9 +47,10 @@ export const ColumnValuesList: React.FC<ColumnValuesListProps> = ({
 
   const filterOptions = useCallback((options: FieldOption[] | undefined, query: string) => {
     if (!options) return [];
-    if (!query) return options;
+    const sorted = [...options].sort((a, b) => a.label.localeCompare(b.label));
+    if (!query) return sorted;
     const lower = query.toLowerCase();
-    return options.filter(o => o.label.toLowerCase().includes(lower));
+    return sorted.filter(o => o.label.toLowerCase().includes(lower));
   }, []);
 
   const handleStartEdit = useCallback((field: FieldDefinition) => {

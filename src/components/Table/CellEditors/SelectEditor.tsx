@@ -51,9 +51,9 @@ export const SelectEditor: React.FC<SelectEditorProps> = ({
     }
   }, [autoFocus]);
 
-  const filteredOptions = options.filter(o =>
-    o.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOptions = options
+    .filter(o => o.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   // Close dropdown when clicking outside
   useEffect(() => {

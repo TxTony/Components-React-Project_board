@@ -53,9 +53,9 @@ export const MultiSelectEditor: React.FC<MultiSelectEditorProps> = ({
     }
   }, [autoFocus]);
 
-  const filteredOptions = options.filter(o =>
-    o.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOptions = options
+    .filter(o => o.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   // Close dropdown when clicking outside
   useEffect(() => {
