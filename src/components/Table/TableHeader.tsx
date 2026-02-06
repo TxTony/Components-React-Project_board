@@ -16,6 +16,8 @@ export interface TableHeaderProps {
   showSelection?: boolean;
   allSelected?: boolean;
   onSelectAll?: (selected: boolean) => void;
+  onColumnContextMenu?: (fieldId: string, position: { x: number; y: number }) => void;
+  selectedRowCount?: number;
 }
 
 export const TableHeader: React.FC<TableHeaderProps> = ({
@@ -27,6 +29,8 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
   showSelection = false,
   allSelected = false,
   onSelectAll,
+  onColumnContextMenu,
+  selectedRowCount = 0,
 }) => {
   const visibleFields = fields.filter((field) => field.visible);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -36,6 +40,13 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
   const handleHeaderClick = (fieldId: string) => {
     if (onSort) {
       onSort(fieldId);
+    }
+  };
+
+  const handleColumnContextMenu = (fieldId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onColumnContextMenu) {
+      onColumnContextMenu(fieldId, { x: e.clientX, y: e.clientY });
     }
   };
 
@@ -153,6 +164,7 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
               }`}
               style={field.width ? { width: `${field.width}px` } : undefined}
               onClick={() => handleHeaderClick(field.id)}
+              onContextMenu={(e) => handleColumnContextMenu(field.id, e)}
               onDragStart={onReorder ? handleDragStart(index) : undefined}
               onDragOver={onReorder ? handleDragOver(index) : undefined}
               onDragLeave={onReorder ? handleDragLeave : undefined}

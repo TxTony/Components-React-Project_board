@@ -40,6 +40,7 @@ export interface UseTableStateReturn {
   selectAllRows: (selected: boolean, visibleRowIds: string[]) => void;
   clearSelection: () => void;
   updateField: (fieldId: string, updates: Partial<FieldDefinition>) => void;
+  bulkUpdateRows: (rowIds: string[], fieldId: string, value: CellValue) => void;
 }
 
 export const useTableState = ({
@@ -225,6 +226,32 @@ export const useTableState = ({
     [onFieldChange]
   );
 
+  const bulkUpdateRows = useCallback(
+    (rowIds: string[], fieldId: string, value: CellValue) => {
+      setRows((prevRows) => {
+        const newRows = prevRows.map((row) => {
+          if (rowIds.includes(row.id)) {
+            return {
+              ...row,
+              values: {
+                ...row.values,
+                [fieldId]: value,
+              },
+            };
+          }
+          return row;
+        });
+
+        if (onChange) {
+          onChange(newRows);
+        }
+
+        return newRows;
+      });
+    },
+    [onChange]
+  );
+
   return {
     rows,
     fields,
@@ -244,5 +271,6 @@ export const useTableState = ({
     selectAllRows,
     clearSelection,
     updateField,
+    bulkUpdateRows,
   };
 };

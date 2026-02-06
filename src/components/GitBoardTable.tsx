@@ -8,17 +8,22 @@ import { TableHeader } from './Table/TableHeader';
 import { TableBody } from './Table/TableBody';
 import { GroupedTableBody } from './Table/GroupedTableBody';
 import { RowContextMenu } from './Table/Menu/RowContextMenu';
+import { ColumnMenu } from './Table/Menu/ColumnMenu';
 import { FilterBar } from './Toolbar/FilterBar';
 import { Toolbar } from './Toolbar/Toolbar';
 import { ViewTabs } from './Toolbar/ViewTabs';
 import { RowDetailPanel } from './ContentPanel/RowDetailPanel';
+import { BulkUpdateModal } from './Dialogs/BulkUpdateModal';
+import { ConfirmationDialog } from './Dialogs/ConfirmationDialog';
+import { ToastContainer } from './Shared/Toast';
 import { sortRows } from '../utils/sorting';
 import { applyAllFilters, extractAutoFillValues } from '../utils/filtering';
 import { groupRows } from '../utils/grouping';
 import { generateRowId } from '../utils/uid';
 import { saveTableState, loadTableState } from '../utils/persistence';
 import { useKeyboardShortcuts, createTableShortcuts } from '../hooks/useKeyboardShortcuts';
-import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent, GroupByChangeEvent } from '@/types';
+import { useToast } from '../hooks/useToast';
+import type { GitBoardTableProps, CellValue, Row, SortConfig, FilterConfig, BulkUpdateEvent, ViewConfig, RowContent, RowSelectionEvent, ContextMenuClickEvent, GroupByChangeEvent, FieldDefinition } from '@/types';
 
 export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   fields,
@@ -87,6 +92,20 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuRow, setContextMenuRow] = useState<Row | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Bulk update modal state
+  const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
+  const [bulkUpdateField, setBulkUpdateField] = useState<FieldDefinition | null>(null);
+  const [bulkUpdateConfirmOpen, setBulkUpdateConfirmOpen] = useState(false);
+  const [bulkUpdateValue, setBulkUpdateValue] = useState<CellValue>(null);
+
+  // Column menu state
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  const [columnMenuPosition, setColumnMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [columnMenuField, setColumnMenuField] = useState<FieldDefinition | null>(null);
+
+  // Toast notifications
+  const { toasts, showToast, closeToast } = useToast();
 
   // Ref to track previous initialRows to avoid unnecessary updates
   const prevInitialRowsRef = useRef<Row[]>();
@@ -179,20 +198,28 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     }
   }, [tableId, fieldOrder, sortConfig, filters, groupBy, fieldWidths, hiddenColumns]);
 
-  const handleCellEdit = (edit: { rowId: string; fieldId: string; value: CellValue }) => {
-    const updatedRows = rows.map((row) => {
-      if (row.id === edit.rowId) {
+  // Helper to update rows with value changes
+  const updateRowsWithValues = (
+    rowIds: string[],
+    fieldId: string,
+    value: CellValue
+  ): Row[] => {
+    return rows.map((row) => {
+      if (rowIds.includes(row.id)) {
         return {
           ...row,
           values: {
             ...row.values,
-            [edit.fieldId]: edit.value,
+            [fieldId]: value,
           },
         };
       }
       return row;
     });
+  };
 
+  const handleCellEdit = (edit: { rowId: string; fieldId: string; value: CellValue }) => {
+    const updatedRows = updateRowsWithValues([edit.rowId], edit.fieldId, edit.value);
     setRows(updatedRows);
 
     // Call parent onChange callback
@@ -505,6 +532,86 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
       setSelectedRows(new Set());
       setLastSelectionAction('clear');
     }
+  };
+
+  const handleColumnContextMenu = (fieldId: string, position: { x: number; y: number }) => {
+    const field = fields.find((f) => f.id === fieldId);
+    if (field) {
+      setColumnMenuField(field);
+      setColumnMenuPosition(position);
+      setColumnMenuOpen(true);
+    }
+  };
+
+  const handleBulkUpdateClick = (fieldId: string) => {
+    const field = fields.find((f) => f.id === fieldId);
+    if (field && selectedRows.size > 0) {
+      setBulkUpdateField(field);
+      setBulkUpdateModalOpen(true);
+    }
+  };
+
+  const handleBulkUpdateModalConfirm = (value: CellValue) => {
+    setBulkUpdateValue(value);
+    setBulkUpdateModalOpen(false);
+    setBulkUpdateConfirmOpen(true);
+  };
+
+  const handleBulkUpdateConfirm = () => {
+    if (bulkUpdateField && selectedRows.size > 0) {
+      const selectedRowIds = Array.from(selectedRows);
+      const updatedRows = updateRowsWithValues(selectedRowIds, bulkUpdateField.id, bulkUpdateValue);
+
+      setRows(updatedRows);
+
+      if (onChange) {
+        onChange(updatedRows);
+      }
+
+      // Emit BulkUpdateEvent to parent
+      if (onBulkUpdate) {
+        const bulkUpdateEvent: BulkUpdateEvent = {
+          sourceCell: {
+            rowId: selectedRowIds[0] || '',
+            fieldId: bulkUpdateField.id,
+            value: bulkUpdateValue,
+          },
+          targetCells: selectedRowIds.map((rowId) => ({
+            rowId,
+            fieldId: bulkUpdateField.id,
+            currentValue: rows.find((r) => r.id === rowId)?.values[bulkUpdateField.id] ?? null,
+          })),
+          field: bulkUpdateField,
+        };
+        onBulkUpdate(bulkUpdateEvent);
+      }
+
+      // Show success toast
+      showToast(
+        `Updated ${selectedRowIds.length} ${selectedRowIds.length === 1 ? 'row' : 'rows'}`,
+        'success',
+        3000
+      );
+    }
+
+    // Clear state
+    setBulkUpdateConfirmOpen(false);
+    setBulkUpdateField(null);
+    setBulkUpdateValue(null);
+  };
+
+  const handleCloseColumnMenu = () => {
+    setColumnMenuOpen(false);
+    setTimeout(() => {
+      setColumnMenuField(null);
+    }, 100);
+  };
+
+  const handleBulkUpdateCancel = () => {
+    setBulkUpdateModalOpen(false);
+    setBulkUpdateConfirmOpen(false);
+    setBulkUpdateField(null);
+    setBulkUpdateValue(null);
   };
 
   const handleAddRow = () => {
@@ -982,6 +1089,8 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
             showSelection
             allSelected={allSelected}
             onSelectAll={handleSelectAll}
+            onColumnContextMenu={handleColumnContextMenu}
+            selectedRowCount={selectedRows.size}
           />
           {groupBy ? (
             <GroupedTableBody
@@ -1059,6 +1168,56 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onCustomAction={handleContextMenuCustomAction}
         />
       )}
+
+      {/* Column Context Menu */}
+      {columnMenuOpen && columnMenuField && (
+        <ColumnMenu
+          field={columnMenuField}
+          position={columnMenuPosition}
+          onClose={handleCloseColumnMenu}
+          onSortAsc={(fieldId) => {
+            handleSort(fieldId);
+            handleCloseColumnMenu();
+          }}
+          onSortDesc={(fieldId) => {
+            const field = fields.find((f) => f.id === fieldId);
+            if (field) {
+              setSortConfig({ field: fieldId, direction: 'desc' });
+            }
+            handleCloseColumnMenu();
+          }}
+          onBulkUpdate={handleBulkUpdateClick}
+          selectedRowCount={selectedRows.size}
+        />
+      )}
+
+      {/* Bulk Update Modal */}
+      {bulkUpdateModalOpen && bulkUpdateField && (
+        <BulkUpdateModal
+          field={bulkUpdateField}
+          selectedRowCount={selectedRows.size}
+          onConfirm={handleBulkUpdateModalConfirm}
+          onCancel={handleBulkUpdateCancel}
+          users={_users}
+          iterations={_iterations}
+        />
+      )}
+
+      {/* Bulk Update Confirmation Dialog */}
+      {bulkUpdateConfirmOpen && bulkUpdateField && (
+        <ConfirmationDialog
+          title={`Update ${selectedRows.size} ${selectedRows.size === 1 ? 'row' : 'rows'}?`}
+          message={`Confirm updating the "${bulkUpdateField.name}" column for ${selectedRows.size} ${
+            selectedRows.size === 1 ? 'row' : 'rows'
+          }.`}
+          confirmLabel="Update"
+          onConfirm={handleBulkUpdateConfirm}
+          onCancel={handleBulkUpdateCancel}
+        />
+      )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 };

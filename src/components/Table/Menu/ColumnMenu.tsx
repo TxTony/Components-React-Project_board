@@ -14,6 +14,8 @@ export interface ColumnMenuProps {
   onSortAsc?: (fieldId: string) => void;
   onSortDesc?: (fieldId: string) => void;
   onRename?: (fieldId: string) => void;
+  onBulkUpdate?: (fieldId: string) => void;
+  selectedRowCount?: number;
 }
 
 export const ColumnMenu: React.FC<ColumnMenuProps> = ({
@@ -24,6 +26,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({
   onSortAsc,
   onSortDesc,
   onRename,
+  onBulkUpdate,
+  selectedRowCount = 0,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +97,21 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({
         >
           Rename column
         </button>
+      )}
+      {onBulkUpdate && selectedRowCount > 0 && field.type !== 'title' && (
+        <>
+          {(onRename || onHide) && (
+            <div className="gitboard-column-menu__divider h-px bg-gray-200 dark:bg-gray-700 my-1" />
+          )}
+          <button
+            type="button"
+            className="gitboard-column-menu__item w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => handleAction(() => onBulkUpdate(field.id))}
+            role="menuitem"
+          >
+            Update {selectedRowCount} {selectedRowCount === 1 ? 'row' : 'rows'}
+          </button>
+        </>
       )}
       {onHide && (
         <button
