@@ -35,12 +35,8 @@ export const LinkEditor: React.FC<LinkEditorProps> = ({
     const trimmedValue = editValue.trim();
 
     if (trimmedValue !== originalValue) {
-      // Auto-prepend https:// if no protocol is specified
-      let finalValue = trimmedValue;
-      if (trimmedValue && !trimmedValue.match(/^https?:\/\//i)) {
-        finalValue = `https://${trimmedValue}`;
-      }
-      onCommit(finalValue);
+      // No auto-prepend - save the link as entered by the user
+      onCommit(trimmedValue);
     } else {
       onCancel();
     }
