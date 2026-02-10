@@ -88,6 +88,10 @@ export const SelectEditor: React.FC<SelectEditorProps> = ({
       e.preventDefault();
       onCancel();
       setIsOpen(false);
+    } else if (e.key === 'z' && e.ctrlKey) {
+      e.preventDefault();
+      onCancel();
+      setIsOpen(false);
     }
   };
 
@@ -114,6 +118,7 @@ export const SelectEditor: React.FC<SelectEditorProps> = ({
           className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
           onKeyDown={(e) => {
             if (e.key === 'Escape') { e.preventDefault(); onCancel(); setIsOpen(false); }
+            if (e.key === 'z' && e.ctrlKey) { e.preventDefault(); onCancel(); setIsOpen(false); }
             e.stopPropagation();
           }}
         />

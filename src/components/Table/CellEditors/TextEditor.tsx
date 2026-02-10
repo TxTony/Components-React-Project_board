@@ -46,6 +46,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();
+    } else if (e.key === 'z' && e.ctrlKey) {
+      e.preventDefault();
+      onCancel();
     }
   };
 

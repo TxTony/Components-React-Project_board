@@ -110,6 +110,10 @@ export const MultiSelectEditor: React.FC<MultiSelectEditorProps> = ({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       handleCommit();
+    } else if (e.key === 'z' && e.ctrlKey) {
+      e.preventDefault();
+      onCancel();
+      setIsOpen(false);
     }
   };
 
@@ -138,6 +142,7 @@ export const MultiSelectEditor: React.FC<MultiSelectEditorProps> = ({
           onKeyDown={(e) => {
             if (e.key === 'Escape') { e.preventDefault(); onCancel(); setIsOpen(false); }
             if (e.key === 'Enter') { e.preventDefault(); handleCommit(); }
+            if (e.key === 'z' && e.ctrlKey) { e.preventDefault(); onCancel(); setIsOpen(false); }
             e.stopPropagation();
           }}
         />

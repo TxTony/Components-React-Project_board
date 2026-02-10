@@ -49,6 +49,9 @@ export const LinkEditor: React.FC<LinkEditorProps> = ({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();
+    } else if (e.key === 'z' && e.ctrlKey) {
+      e.preventDefault();
+      onCancel();
     }
   };
 

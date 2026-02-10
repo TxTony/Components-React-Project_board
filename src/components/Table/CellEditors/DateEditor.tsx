@@ -54,6 +54,9 @@ export const DateEditor: React.FC<DateEditorProps> = ({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();
+    } else if (e.key === 'z' && e.ctrlKey) {
+      e.preventDefault();
+      onCancel();
     }
   };
 
