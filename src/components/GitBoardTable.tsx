@@ -693,6 +693,11 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
     if (row) {
       setDetailPanelRow(row);
       setDetailPanelOpen(true);
+
+      // Call onRowOpen callback if provided
+      if (_onRowOpen) {
+        _onRowOpen(row);
+      }
     }
   };
 
