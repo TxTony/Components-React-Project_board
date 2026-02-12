@@ -206,6 +206,9 @@ export interface GitBoardTableProps {
 
   // Group by props
   onGroupByChange?: (event: GroupByChangeEvent) => void;  // Called when group by changes
+
+  // Custom content slot for row detail panel
+  renderRowDetailContent?: (row: Row) => React.ReactNode;  // Custom content to render in row detail panel
 }
 
 /**

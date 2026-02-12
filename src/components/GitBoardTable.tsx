@@ -54,6 +54,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
   customActions = [],
   onContextMenuClick,
   onGroupByChange,
+  renderRowDetailContent,
 }) => {
   // Memoize field IDs to prevent unnecessary re-renders
   const fieldIds = useMemo(() => fields.map((f) => f.id).join(','), [fields]);
@@ -1157,6 +1158,7 @@ export const GitBoardTable: React.FC<GitBoardTableProps> = ({
           onDuplicate={handleContextMenuDuplicate}
           customActions={customActions}
           onCustomAction={handleContextMenuCustomAction}
+          renderCustomContent={renderRowDetailContent}
         />
       )}
 

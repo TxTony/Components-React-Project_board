@@ -21,6 +21,7 @@ export interface RowDetailPanelProps {
   onDuplicate?: (rowId: string) => void;
   customActions?: CustomAction[];
   onCustomAction?: (actionName: string, row: Row) => void;
+  renderCustomContent?: (row: Row) => React.ReactNode;
 }
 
 export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
@@ -34,6 +35,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
   onDuplicate,
   customActions = [],
   onCustomAction,
+  renderCustomContent,
 }) => {
   const [content, setContent] = useState<RowContent>(() => ({
     description: row.content?.description || '',
@@ -320,23 +322,32 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-6">
-          {/* Left Column - Description Editor */}
-          <div className="gitboard-row-detail-panel__left pr-6 border-r border-gray-200 dark:border-gray-700">
-            <UnifiedDescriptionEditor
-              value={content.description}
-              onChange={handleDescriptionChange}
-            />
+        <div className="gitboard-row-detail-panel__content flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column - Description Editor */}
+            <div className="gitboard-row-detail-panel__left pr-6 border-r border-gray-200 dark:border-gray-700">
+              <UnifiedDescriptionEditor
+                value={content.description}
+                onChange={handleDescriptionChange}
+              />
+            </div>
+
+            {/* Right Column - Column Values */}
+            <div className="gitboard-row-detail-panel__right pl-6">
+              <ColumnValuesList
+                row={row}
+                fields={fields}
+                onValueChange={handleColumnValueChange}
+              />
+            </div>
           </div>
 
-          {/* Right Column - Column Values */}
-          <div className="gitboard-row-detail-panel__right pl-6">
-            <ColumnValuesList
-              row={row}
-              fields={fields}
-              onValueChange={handleColumnValueChange}
-            />
-          </div>
+          {/* Custom Content Section */}
+          {renderCustomContent && (
+            <div className="gitboard-row-detail-panel__custom-content mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              {renderCustomContent(row)}
+            </div>
+          )}
         </div>
       </div>
     </div>
