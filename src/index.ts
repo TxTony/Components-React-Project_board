@@ -102,6 +102,9 @@ export type {
   FieldOption,
   FieldDefinition,
   Row,
+  RowContent,
+  Link,
+  Document,
   User,
   Iteration,
   ContentItem,
@@ -119,6 +122,8 @@ export type {
   RowReorderEvent,
   RowSelectionEvent,
   GroupByChangeEvent,
+  CustomAction,
+  ContextMenuClickEvent,
 } from './types';
 
 // Export mock data for testing/development
